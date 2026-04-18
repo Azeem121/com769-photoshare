@@ -31,6 +31,7 @@ class _FakeRequest:
     headers = {}
     params = {}
     route_params = {}
+    method = "GET"
 
     def get_body(self):
         return b""
