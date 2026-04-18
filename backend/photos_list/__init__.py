@@ -51,8 +51,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         parameters.append({"name": "@tag", "value": tag})
 
     where_clause = ("WHERE " + " AND ".join(conditions)) if conditions else ""
-
-    order_clause = "ORDER BY c.createdAt DESC" if sort != "rating" else "ORDER BY c.avgRating DESC"
+    order_clause = "ORDER BY c.avgRating DESC" if sort == "rating" else "ORDER BY c.createdAt DESC"
 
     query = f"""
         SELECT c.id, c.title, c.caption, c.location, c.people,
@@ -66,9 +65,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         photos = cosmos_client.query_items("photos", query, parameters)
+        logging.info("photos_list: returned %d photos", len(photos))
     except Exception as exc:
-        logging.error("Cosmos DB query failed: %s", exc)
-        return auth_helper.make_response({"error": "Failed to retrieve photos"}, 500)
+        logging.exception("Cosmos DB query failed")
+        return auth_helper.make_response({
+            "error": "Failed to retrieve photos",
+            "detail": str(exc),
+            "type": type(exc).__name__,
+        }, 500)
 
     count_query = f"SELECT VALUE COUNT(1) FROM c {where_clause}"
     try:
