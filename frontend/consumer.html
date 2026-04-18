@@ -109,12 +109,12 @@
     let knownTags   = new Set();
 
     // ── Boot ─────────────────────────────────────────────────────────────
-    (async () => {
-      const user = await requireAuth("consumer");
+    (function () {
+      const user = requireAuth("consumer");
       if (!user) return;
       setNavUser(user);
       setupStars();
-      await loadPhotos(true);
+      loadPhotos(true);
     })();
 
     // ── Load / Search / Filter ────────────────────────────────────────────
@@ -250,7 +250,7 @@
       const meta = [];
       if (photo.location) meta.push(`<span>📍 ${escHtml(photo.location)}</span>`);
       if (photo.people?.length) meta.push(`<span>👥 ${photo.people.map(escHtml).join(", ")}</span>`);
-      if (photo.uploaderEmail) meta.push(`<span>📷 ${escHtml(photo.uploaderEmail)}</span>`);
+      if (photo.uploaderName) meta.push(`<span>📷 ${escHtml(photo.uploaderName)}</span>`);
       if (photo.createdAt) meta.push(`<span>🗓 ${new Date(photo.createdAt).toLocaleDateString()}</span>`);
       document.getElementById("modal-meta").innerHTML = meta.join("");
 

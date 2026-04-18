@@ -1,81 +1,92 @@
 """
-Azure Static Web Apps authentication helper.
+Token-based authentication helper.
 
-SWA injects x-ms-client-principal into every request reaching /api/*.
-The header is a base64-encoded JSON blob containing userId, userDetails
-(the email / username), userRoles, and identityProvider.
-
-Roles are populated by the GetRoles function (rolesSource in
-staticwebapp.config.json).  Every authenticated user has "authenticated";
-creators have "creator"; consumers have "consumer".
+Tokens are stored in Cosmos DB "tokens" container.
+Users are stored in "auth_users" container.
+Role is derived from username: suffix @creator -> creator, else consumer.
 """
 
-import base64
+import hashlib
 import json
 import logging
+import secrets
 from typing import Optional
 
 import azure.functions as func
 
+from shared import cosmos_client
 
-def parse_principal(req: func.HttpRequest) -> Optional[dict]:
-    header = req.headers.get("x-ms-client-principal")
-    if not header:
-        return None
-    try:
-        # Azure pads to multiples of 4 itself, but add == to be safe
-        decoded = base64.b64decode(header + "==").decode("utf-8")
-        return json.loads(decoded)
-    except Exception as exc:
-        logging.warning("Failed to parse x-ms-client-principal: %s", exc)
-        return None
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
+}
 
 
-def get_user_id(principal: dict) -> str:
-    return principal.get("userId", "")
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 
-def get_user_email(principal: dict) -> str:
-    return principal.get("userDetails", "")
+def verify_password(password: str, stored_hash: str) -> bool:
+    return hash_password(password) == stored_hash
 
 
-def get_roles(principal: dict) -> list:
-    return principal.get("userRoles", [])
+def generate_token() -> str:
+    return secrets.token_hex(32)
 
 
-def is_authenticated(principal: Optional[dict]) -> bool:
-    return bool(principal) and "authenticated" in get_roles(principal)
+def make_response(body: dict, status_code: int = 200) -> func.HttpResponse:
+    return func.HttpResponse(
+        json.dumps(body),
+        status_code=status_code,
+        mimetype="application/json",
+        headers=CORS_HEADERS,
+    )
 
 
-def has_role(principal: Optional[dict], role: str) -> bool:
-    return bool(principal) and role in get_roles(principal)
-
-
-def require_auth(req: func.HttpRequest) -> dict:
-    principal = parse_principal(req)
-    if not is_authenticated(principal):
-        raise PermissionError("Authentication required")
-    return principal
-
-
-def require_role(req: func.HttpRequest, role: str) -> dict:
-    principal = require_auth(req)
-    if not has_role(principal, role):
-        raise PermissionError(f'Role "{role}" required')
-    return principal
+def options_response() -> func.HttpResponse:
+    return func.HttpResponse(status_code=200, headers=CORS_HEADERS)
 
 
 def json_401(message: str = "Authentication required") -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps({"error": message}),
-        status_code=401,
-        mimetype="application/json",
-    )
+    return make_response({"error": message}, 401)
 
 
 def json_403(message: str = "Forbidden") -> func.HttpResponse:
-    return func.HttpResponse(
-        json.dumps({"error": message}),
-        status_code=403,
-        mimetype="application/json",
-    )
+    return make_response({"error": message}, 403)
+
+
+def parse_auth_header(req: func.HttpRequest) -> Optional[str]:
+    auth = req.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip()
+    return None
+
+
+def get_current_user(req: func.HttpRequest) -> Optional[dict]:
+    token = parse_auth_header(req)
+    if not token:
+        return None
+    try:
+        token_doc = cosmos_client.get_item("tokens", token, token)
+        return token_doc
+    except Exception as exc:
+        logging.warning("Token lookup failed: %s", exc)
+        return None
+
+
+def require_role(req: func.HttpRequest, role: str) -> dict:
+    user = get_current_user(req)
+    if not user:
+        raise PermissionError("Authentication required")
+    if user.get("role") != role:
+        raise PermissionError(f'Role "{role}" required')
+    return user
+
+
+def get_user_id(user: dict) -> str:
+    return user.get("userId", "")
+
+
+def get_username(user: dict) -> str:
+    return user.get("username", "")

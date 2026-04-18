@@ -1,30 +1,37 @@
 /**
  * api.js — All backend REST calls
  *
- * Azure SWA proxies /api/* to the Function App automatically.
- * Cookies (including the SWA auth session) are sent with every request
- * so we do NOT need to attach any Authorization header manually — the
- * x-ms-client-principal header is injected by the SWA runtime.
+ * Uses Bearer token from localStorage for authenticated requests.
  */
 
-const API = "/api";
+const API_BASE = "https://photoshareapi-cpechycedwbecjae.francecentral-01.azurewebsites.net/api";
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
 
 async function _request(method, path, body = null, isFormData = false) {
-  const options = {
-    method,
-    credentials: "include",
-  };
+  const headers = { ...authHeaders() };
+
+  const options = { method, headers };
 
   if (body !== null) {
     if (isFormData) {
-      options.body = body; // FormData — browser sets Content-Type with boundary
+      options.body = body;
     } else {
-      options.headers = { "Content-Type": "application/json" };
+      headers["Content-Type"] = "application/json";
       options.body = JSON.stringify(body);
     }
   }
 
-  const res = await fetch(`${API}${path}`, options);
+  const res = await fetch(`${API_BASE}${path}`, options);
+
+  if (res.status === 401) {
+    clearSession();
+    window.location.href = "/index.html";
+    return null;
+  }
 
   if (res.status === 204) return null;
 
@@ -43,13 +50,14 @@ async function _request(method, path, body = null, isFormData = false) {
   return data;
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const login = (username, password) =>
+  _request("POST", "/auth/login", { username, password });
+
 // ── Health ────────────────────────────────────────────────────────────────────
 const getHealth = () => _request("GET", "/health");
 
 // ── Photos (public) ───────────────────────────────────────────────────────────
-/**
- * @param {{ search?: string, sort?: string, tag?: string, page?: number, limit?: number }} opts
- */
 function listPhotos({ search = "", sort = "recent", tag = "", page = 1, limit = 12 } = {}) {
   const params = new URLSearchParams();
   if (search) params.set("search", search);
@@ -66,9 +74,6 @@ const getPhoto = (id) => _request("GET", `/photos/${id}`);
 // ── Photos (creator) ─────────────────────────────────────────────────────────
 const getMyPhotos = () => _request("GET", "/photos/my");
 
-/**
- * @param {FormData} formData  - must include: photo (File), title, caption?, location?, people?
- */
 const uploadPhoto = (formData) => _request("POST", "/photos/upload", formData, true);
 
 const deletePhoto = (id) => _request("DELETE", `/photos/${id}`);

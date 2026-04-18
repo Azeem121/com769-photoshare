@@ -1,18 +1,18 @@
-import json
 import logging
 from datetime import datetime, timezone
 
 import azure.functions as func
 
+from shared import auth_helper
+
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return auth_helper.options_response()
+
     logging.info("Health check requested")
-    return func.HttpResponse(
-        json.dumps({
-            "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "version": "1.0.0",
-        }),
-        status_code=200,
-        mimetype="application/json",
-    )
+    return auth_helper.make_response({
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "1.0.0",
+    })
