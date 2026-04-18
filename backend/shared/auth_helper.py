@@ -2,7 +2,7 @@
 Token-based authentication helper.
 
 Tokens are stored in Cosmos DB "tokens" container.
-Users are stored in "auth_users" container.
+Users are stored in "users" container.
 Role is derived from username: suffix @creator -> creator, else consumer.
 """
 

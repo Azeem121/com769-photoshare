@@ -17,7 +17,7 @@ def get_database():
     global _client, _database
     if _database is None:
         conn_str = os.environ["COSMOS_DB_CONNECTION_STRING"]
-        db_name = os.environ["COSMOS_DB_DATABASE_NAME"]
+        db_name = os.environ.get("COSMOS_DB_DATABASE_NAME", "photoshare")
         logging.info("cosmos_client: connecting to database=%s", db_name)
         _client = CosmosClient.from_connection_string(conn_str)
         _database = _client.get_database_client(db_name)

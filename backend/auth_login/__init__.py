@@ -43,9 +43,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     # Look up existing user
     try:
-        existing = cosmos_client.get_item("auth_users", username, username)
+        existing = cosmos_client.get_item("users", username, username)
     except Exception as exc:
-        logging.exception("Failed to read auth_users container")
+        logging.exception("Failed to read users container")
         return auth_helper.make_response({
             "error": "Database read error",
             "detail": str(exc),
@@ -66,9 +66,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             "createdAt": now,
         }
         try:
-            cosmos_client.create_item("auth_users", user_doc)
+            cosmos_client.create_item("users", user_doc)
         except Exception as exc:
-            logging.exception("Failed to create user in auth_users")
+            logging.exception("Failed to create user in users")
             return auth_helper.make_response({
                 "error": "Failed to create account",
                 "detail": str(exc),
