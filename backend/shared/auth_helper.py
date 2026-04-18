@@ -68,8 +68,13 @@ def get_current_user(req: func.HttpRequest) -> Optional[dict]:
     if not token:
         return None
     try:
-        token_doc = cosmos_client.get_item("tokens", token, token)
-        return token_doc
+        # Cross-partition query works regardless of the container's partition key setting
+        results = cosmos_client.query_items(
+            "tokens",
+            "SELECT * FROM c WHERE c.id = @token",
+            [{"name": "@token", "value": token}],
+        )
+        return results[0] if results else None
     except Exception as exc:
         logging.warning("Token lookup failed: %s", exc)
         return None

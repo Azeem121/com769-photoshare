@@ -1,151 +1,172 @@
-"""
-POST /api/photos/upload  — creator only
-
-Accepts multipart/form-data with:
-  photo     : image file (required)
-  title     : string (required)
-  caption   : string
-  location  : string
-  people    : comma-separated names
-"""
-
+import io
+import json
 import logging
+import os
 import traceback
 import uuid
 from datetime import datetime, timezone
 
 import azure.functions as func
 
-from shared import auth_helper, blob_client, cognitive_service, cosmos_client
-
-_ALLOWED_MIME = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-_EXT_MAP = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
+CORS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type",
 }
+
+
+def _json(body: dict, status: int = 200) -> func.HttpResponse:
+    return func.HttpResponse(
+        json.dumps(body), status_code=status,
+        mimetype="application/json", headers=CORS,
+    )
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     if req.method == "OPTIONS":
-        return auth_helper.options_response()
+        return func.HttpResponse(status_code=200, headers=CORS)
 
-    logging.info("photos_upload triggered")
+    logging.info("Step 1: photos_upload started")
 
     try:
-        # Step 1 — auth
-        logging.info("Step 1: checking auth")
-        try:
-            user = auth_helper.require_role(req, "creator")
-        except PermissionError as exc:
-            return auth_helper.json_403(str(exc))
+        # Step 2: auth header
+        logging.info("Step 2: checking auth header")
+        auth_header = req.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return _json({"error": "Unauthorized"}, 401)
+        token = auth_header.split(" ", 1)[1].strip()
 
-        user_id = auth_helper.get_user_id(user)
-        username = auth_helper.get_username(user)
-        logging.info("Step 1 done: user=%s", username)
+        # Step 3: validate token via cross-partition query (works regardless of partition key)
+        logging.info("Step 3: validating token in Cosmos DB")
+        from azure.cosmos import CosmosClient
+        conn_str = os.environ.get("COSMOS_DB_CONNECTION_STRING", "")
+        db_name = os.environ.get("COSMOS_DB_DATABASE_NAME", "photoshare")
+        cosmos = CosmosClient.from_connection_string(conn_str)
+        db = cosmos.get_database_client(db_name)
+        tokens_container = db.get_container_client("tokens")
 
-        # Step 2 — parse form
-        logging.info("Step 2: parsing form fields")
-        title = (req.form.get("title") or "").strip()
-        if not title:
-            return auth_helper.make_response({"error": "title is required"}, 400)
+        items = list(tokens_container.query_items(
+            query="SELECT * FROM c WHERE c.id = @token",
+            parameters=[{"name": "@token", "value": token}],
+            enable_cross_partition_query=True,
+        ))
+        if not items:
+            return _json({"error": "Invalid or expired token"}, 401)
 
-        photo_file = req.files.get("photo")
-        if not photo_file:
-            return auth_helper.make_response({"error": "photo file is required"}, 400)
+        token_doc = items[0]
+        username = token_doc.get("username", "")
+        role = token_doc.get("role", "")
+        logging.info("Step 3 done: user=%s role=%s", username, role)
 
-        content_type = photo_file.content_type or "image/jpeg"
-        if content_type not in _ALLOWED_MIME:
-            return auth_helper.make_response(
-                {"error": f"Unsupported file type: {content_type}"}, 400
-            )
+        if role != "creator":
+            return _json({"error": "Creator role required"}, 403)
 
-        # Step 3 — read file bytes
-        logging.info("Step 3: reading file bytes")
-        image_bytes = photo_file.read()
-        if not image_bytes:
-            return auth_helper.make_response({"error": "Photo file is empty"}, 400)
-        logging.info("Step 3 done: size=%d content_type=%s", len(image_bytes), content_type)
-
+        # Step 4: parse form fields
+        logging.info("Step 4: parsing form fields")
+        title = (req.form.get("title") or "Untitled").strip()
         caption = (req.form.get("caption") or "").strip()
         location = (req.form.get("location") or "").strip()
-        people_raw = req.form.get("people") or ""
-        people = [p.strip() for p in people_raw.split(",") if p.strip()]
+        people_str = req.form.get("people") or ""
+        people = [p.strip() for p in people_str.split(",") if p.strip()]
+        logging.info("Step 4 done: title=%s", title)
 
-        # Step 4 — upload to blob storage
+        # Step 5: read file
+        logging.info("Step 5: reading uploaded file")
+        photo_file = req.files.get("photo")
+        if not photo_file:
+            return _json({"error": "No photo file provided"}, 400)
+        file_bytes = photo_file.read()
+        content_type = photo_file.content_type or "image/jpeg"
+        logging.info("Step 5 done: size=%d content_type=%s", len(file_bytes), content_type)
+
+        if not file_bytes:
+            return _json({"error": "Photo file is empty"}, 400)
+
+        # Step 6: upload to blob storage
+        logging.info("Step 6: uploading to blob storage")
+        from azure.storage.blob import BlobServiceClient, ContentSettings
+        blob_conn_str = os.environ.get("BLOB_STORAGE_CONNECTION_STRING", "")
+        container_name = os.environ.get("BLOB_CONTAINER_NAME", "photos")
+
+        blob_service = BlobServiceClient.from_connection_string(blob_conn_str)
+        ext = ".jpg"
+        if content_type == "image/png":
+            ext = ".png"
+        elif content_type == "image/gif":
+            ext = ".gif"
+        elif content_type == "image/webp":
+            ext = ".webp"
+
+        filename = f"{uuid.uuid4()}{ext}"
+        blob = blob_service.get_blob_client(container=container_name, blob=filename)
+        blob.upload_blob(
+            file_bytes,
+            overwrite=True,
+            content_settings=ContentSettings(content_type=content_type),
+        )
+        account_name = blob_service.account_name
+        image_url = f"https://{account_name}.blob.core.windows.net/{container_name}/{filename}"
+        logging.info("Step 6 done: url=%s", image_url)
+
+        # Step 7: AI tags (optional — never blocks upload)
+        logging.info("Step 7: computer vision analysis")
+        ai_tags = []
+        ai_caption = ""
+        try:
+            cv_endpoint = os.environ.get("CV_ENDPOINT", "")
+            cv_key = os.environ.get("CV_KEY", "")
+            if cv_endpoint and cv_key:
+                from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+                from msrest.authentication import CognitiveServicesCredentials
+                cv_client = ComputerVisionClient(
+                    cv_endpoint, CognitiveServicesCredentials(cv_key)
+                )
+                analysis = cv_client.analyze_image_in_stream(
+                    io.BytesIO(file_bytes),
+                    visual_features=["Tags", "Description"],
+                )
+                ai_tags = [t.name for t in (analysis.tags or [])[:5] if t.confidence > 0.6]
+                if analysis.description and analysis.description.captions:
+                    ai_caption = analysis.description.captions[0].text
+                logging.info("Step 7 done: tags=%s", ai_tags)
+            else:
+                logging.info("Step 7: CV not configured, skipping")
+        except Exception as cv_err:
+            logging.warning("Step 7: CV failed (non-fatal): %s", cv_err)
+
+        # Step 8: save to Cosmos DB
+        logging.info("Step 8: saving photo document to Cosmos DB")
         photo_id = str(uuid.uuid4())
-        blob_name = f"{photo_id}{_EXT_MAP.get(content_type, '.jpg')}"
-        logging.info("Step 4: uploading to blob storage blob_name=%s", blob_name)
-
-        try:
-            image_url = blob_client.upload_photo(blob_name, image_bytes, content_type)
-        except Exception as exc:
-            logging.exception("Step 4 FAILED: blob upload error")
-            return auth_helper.make_response({
-                "error": "Failed to upload image",
-                "detail": str(exc),
-                "type": type(exc).__name__,
-            }, 500)
-        logging.info("Step 4 done: url=%s", image_url)
-
-        # Step 5 — computer vision (optional, never blocks)
-        logging.info("Step 5: running computer vision")
-        try:
-            ai_result = cognitive_service.analyse_image(image_bytes)
-        except Exception:
-            logging.exception("Step 5: CV failed, continuing with empty tags")
-            ai_result = {"tags": [], "description": "", "text": []}
-        logging.info("Step 5 done: tags=%s", ai_result.get("tags", []))
-
-        # Step 6 — save to Cosmos DB
-        logging.info("Step 6: saving to Cosmos DB")
         now = datetime.now(timezone.utc).isoformat()
-        doc = {
+        photo_doc = {
             "id": photo_id,
-            "uploadedBy": user_id,
+            "uploadedBy": username,
             "uploaderName": username,
             "title": title,
             "caption": caption,
             "location": location,
             "people": people,
-            "blobName": blob_name,
             "imageUrl": image_url,
+            "blobName": filename,
+            "aiTags": ai_tags,
+            "aiDescription": ai_caption,
             "avgRating": 0.0,
             "ratingCount": 0,
-            "aiTags": ai_result.get("tags", []),
-            "aiDescription": ai_result.get("description", ""),
-            "aiText": ai_result.get("text", []),
             "createdAt": now,
             "updatedAt": now,
         }
 
-        try:
-            cosmos_client.create_item("photos", doc)
-        except Exception as exc:
-            logging.exception("Step 6 FAILED: Cosmos DB insert error")
-            try:
-                blob_client.delete_photo(blob_name)
-            except Exception:
-                pass
-            return auth_helper.make_response({
-                "error": "Failed to save photo metadata",
-                "detail": str(exc),
-                "type": type(exc).__name__,
-            }, 500)
+        photos_container = db.get_container_client("photos")
+        photos_container.create_item(body=photo_doc)
+        logging.info("Step 8 done: photo id=%s saved", photo_id)
 
-        logging.info("Step 6 done: photo id=%s saved successfully", photo_id)
-
-        return auth_helper.make_response({
+        return _json({
             "id": photo_id,
             "imageUrl": image_url,
             "title": title,
-            "aiTags": ai_result.get("tags", []),
+            "aiTags": ai_tags,
         }, 201)
 
     except Exception as exc:
-        logging.error("Unhandled upload error: %s", traceback.format_exc())
-        return auth_helper.make_response({
-            "error": str(exc),
-            "trace": traceback.format_exc(),
-        }, 500)
+        logging.error("UPLOAD FAILED: %s", traceback.format_exc())
+        return _json({"error": str(exc), "trace": traceback.format_exc()}, 500)
