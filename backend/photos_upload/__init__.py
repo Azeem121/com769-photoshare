@@ -15,6 +15,7 @@ then persists a photo document in Cosmos DB.
 import cgi
 import io
 import logging
+import traceback
 import uuid
 from datetime import datetime, timezone
 
@@ -55,11 +56,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     user_id = auth_helper.get_user_id(user)
     username = auth_helper.get_username(user)
+    logging.info("photos_upload: user=%s", username)
 
+    # ── Parse multipart form ──────────────────────────────────────────────────
     try:
         form = _parse_multipart(req)
-    except Exception as exc:
-        logging.error("Multipart parse error: %s", exc)
+    except Exception:
+        logging.exception("Multipart parse error")
         return auth_helper.make_response({"error": "Invalid multipart form data"}, 400)
 
     title = form.getvalue("title", "").strip()
@@ -78,22 +81,36 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     if len(image_bytes) == 0:
         return auth_helper.make_response({"error": "Photo file is empty"}, 400)
 
+    logging.info("photos_upload: file size=%d content_type=%s", len(image_bytes), content_type)
+
     caption = form.getvalue("caption", "").strip()
     location = form.getvalue("location", "").strip()
     people_raw = form.getvalue("people", "")
     people = [p.strip() for p in people_raw.split(",") if p.strip()]
 
+    # ── Upload to Blob Storage ────────────────────────────────────────────────
     photo_id = str(uuid.uuid4())
     blob_name = f"{photo_id}{_EXT_MAP.get(content_type, '.jpg')}"
 
     try:
         image_url = blob_client.upload_photo(blob_name, image_bytes, content_type)
+        logging.info("photos_upload: blob uploaded url=%s", image_url)
     except Exception as exc:
-        logging.error("Blob upload failed: %s", exc)
-        return auth_helper.make_response({"error": "Failed to upload image"}, 500)
+        logging.exception("Blob upload failed")
+        return auth_helper.make_response({
+            "error": "Failed to upload image",
+            "detail": str(exc),
+            "type": type(exc).__name__,
+        }, 500)
 
-    ai_result = cognitive_service.analyse_image(image_bytes)
+    # ── Computer Vision (graceful — never blocks upload) ─────────────────────
+    try:
+        ai_result = cognitive_service.analyse_image(image_bytes)
+    except Exception:
+        logging.exception("CV analysis raised unexpectedly; continuing with empty tags")
+        ai_result = {"tags": [], "description": "", "text": []}
 
+    # ── Save photo document to Cosmos DB ─────────────────────────────────────
     now = datetime.now(timezone.utc).isoformat()
     doc = {
         "id": photo_id,
@@ -116,15 +133,20 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         cosmos_client.create_item("photos", doc)
+        logging.info("photos_upload: cosmos doc created id=%s", photo_id)
     except Exception as exc:
-        logging.error("Cosmos DB insert failed: %s", exc)
+        logging.exception("Cosmos DB insert failed; cleaning up blob")
         try:
             blob_client.delete_photo(blob_name)
         except Exception:
             pass
-        return auth_helper.make_response({"error": "Failed to save photo metadata"}, 500)
+        return auth_helper.make_response({
+            "error": "Failed to save photo metadata",
+            "detail": str(exc),
+            "type": type(exc).__name__,
+            "trace": traceback.format_exc(),
+        }, 500)
 
-    logging.info("Photo uploaded: %s by %s", photo_id, user_id)
     return auth_helper.make_response({
         "id": photo_id,
         "imageUrl": image_url,
