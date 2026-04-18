@@ -27,7 +27,7 @@ async function _request(method, path, body = null, isFormData = false) {
 
   const res = await fetch(`${API_BASE}${path}`, options);
 
-  if (res.status === 401) {
+  if (res.status === 401 && !path.startsWith("/auth/")) {
     clearSession();
     window.location.href = "/index.html";
     return null;

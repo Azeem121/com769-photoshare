@@ -59,6 +59,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     else:
         user_doc = {
             "id": username,
+            "userId": username,
             "username": username,
             "passwordHash": auth_helper.hash_password(password),
             "role": role,
