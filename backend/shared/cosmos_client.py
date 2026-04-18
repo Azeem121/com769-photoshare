@@ -4,7 +4,6 @@ One CosmosClient instance is reused across warm invocations (module-level single
 """
 
 import os
-import logging
 from typing import Any, Optional
 
 from azure.cosmos import CosmosClient, exceptions

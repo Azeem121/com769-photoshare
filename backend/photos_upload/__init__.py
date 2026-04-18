@@ -20,9 +20,8 @@ import uuid
 from datetime import datetime, timezone
 
 import azure.functions as func
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from shared import auth_helper, blob_client, cosmos_client, cognitive_service
+
+from shared import auth_helper, blob_client, cognitive_service, cosmos_client
 
 _ALLOWED_MIME = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 _EXT_MAP = {
