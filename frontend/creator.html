@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoShare — Creator Dashboard</title>
+  <link rel="stylesheet" href="/shared/styles.css" />
+</head>
+<body>
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      PhotoShare
+      <span class="role-badge creator">Creator</span>
+    </div>
+    <div class="navbar-right">
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- ── Main layout ────────────────────────────────────────────────────── -->
+  <div class="creator-layout">
+
+    <!-- Upload Panel -->
+    <aside>
+      <div class="card upload-panel">
+        <h2>Upload Photo</h2>
+        <form class="upload-form" id="upload-form" onsubmit="handleUpload(event)">
+
+          <div class="form-group">
+            <div class="file-drop-zone" id="drop-zone">
+              <input type="file" id="photo-file" accept="image/jpeg,image/png,image/gif,image/webp"
+                     onchange="handleFileChange(event)" />
+              <div class="file-drop-label">Click or drag a photo here</div>
+              <div class="file-drop-sub">JPEG, PNG, GIF, WebP · max 10 MB</div>
+            </div>
+            <img id="upload-preview" class="hidden" alt="Preview" />
+          </div>
+
+          <div class="form-group">
+            <label for="photo-title">Title *</label>
+            <input type="text" id="photo-title" placeholder="Give your photo a title"
+                   maxlength="100" required />
+          </div>
+
+          <div class="form-group">
+            <label for="photo-caption">Caption</label>
+            <textarea id="photo-caption" placeholder="Tell the story behind this photo…"
+                      maxlength="500" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="photo-location">Location</label>
+            <input type="text" id="photo-location" placeholder="e.g. Belfast, UK"
+                   maxlength="100" />
+          </div>
+
+          <div class="form-group">
+            <label for="photo-people">People tagged</label>
+            <input type="text" id="photo-people" placeholder="Alice, Bob, Carol"
+                   maxlength="200" />
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="upload-btn">
+            Upload Photo
+          </button>
+
+          <p class="error-text"  id="upload-error"></p>
+          <p class="success-text" id="upload-success"></p>
+        </form>
+      </div>
+    </aside>
+
+    <!-- My Photos -->
+    <section>
+      <h2 style="padding: 0 4px 16px; font-size:1.1rem; font-weight:700;">My Photos</h2>
+      <div class="photo-grid" id="my-photos-grid">
+        <p class="placeholder"><span class="spinner"></span></p>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/api.js"></script>
+  <script>
+    // ── Boot ──────────────────────────────────────────────────────────────
+    (async () => {
+      const user = await requireAuth("creator");
+      if (!user) return;
+      setNavUser(user);
+      await refreshMyPhotos();
+    })();
+
+    // ── File preview ──────────────────────────────────────────────────────
+    function handleFileChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const preview = document.getElementById("upload-preview");
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove("hidden");
+    }
+
+    // ── Upload ────────────────────────────────────────────────────────────
+    async function handleUpload(e) {
+      e.preventDefault();
+
+      const errEl  = document.getElementById("upload-error");
+      const okEl   = document.getElementById("upload-success");
+      const btn    = document.getElementById("upload-btn");
+      errEl.textContent = "";
+      okEl.textContent  = "";
+
+      const file = document.getElementById("photo-file").files[0];
+      if (!file) { errEl.textContent = "Please select a photo."; return; }
+      if (file.size > 10 * 1024 * 1024) { errEl.textContent = "File must be under 10 MB."; return; }
+
+      const title = document.getElementById("photo-title").value.trim();
+      if (!title) { errEl.textContent = "Title is required."; return; }
+
+      const caption  = document.getElementById("photo-caption").value.trim();
+      const location = document.getElementById("photo-location").value.trim();
+      const people   = document.getElementById("photo-people").value.trim();
+
+      const formData = new FormData();
+      formData.append("photo", file);
+      formData.append("title", title);
+      formData.append("caption", caption);
+      formData.append("location", location);
+      formData.append("people", people);
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Uploading…';
+
+      try {
+        const result = await uploadPhoto(formData);
+        okEl.textContent = `"${result.title}" uploaded successfully!`;
+        if (result.aiTags?.length) {
+          okEl.textContent += ` AI tags: ${result.aiTags.join(", ")}.`;
+        }
+        document.getElementById("upload-form").reset();
+        document.getElementById("upload-preview").classList.add("hidden");
+        await refreshMyPhotos();
+      } catch (err) {
+        errEl.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Upload Photo";
+      }
+    }
+
+    // ── My Photos grid ────────────────────────────────────────────────────
+    async function refreshMyPhotos() {
+      const grid = document.getElementById("my-photos-grid");
+      grid.innerHTML = '<p class="placeholder"><span class="spinner"></span></p>';
+
+      try {
+        const data = await getMyPhotos();
+        grid.innerHTML = "";
+
+        if (!data.photos.length) {
+          grid.innerHTML = '<p class="placeholder">No photos yet — upload your first one!</p>';
+          return;
+        }
+
+        data.photos.forEach(p => grid.appendChild(makeCreatorCard(p)));
+      } catch (err) {
+        grid.innerHTML = `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
+      }
+    }
+
+    function makeCreatorCard(photo) {
+      const card = document.createElement("div");
+      card.className = "photo-card creator-card";
+      card.dataset.id = photo.id;
+
+      const stars = photo.avgRating
+        ? `★ ${photo.avgRating.toFixed(1)}`
+        : "No ratings";
+
+      const tagsHtml = (photo.aiTags || []).slice(0, 3)
+        .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
+
+      card.innerHTML = `
+        <div class="photo-card-thumb">
+          <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+        </div>
+        <button class="delete-btn" onclick="handleDelete(event, '${photo.id}')">Delete</button>
+        <div class="photo-card-body">
+          <div class="photo-card-title">${escHtml(photo.title)}</div>
+          ${photo.location ? `<div class="photo-card-meta">📍 ${escHtml(photo.location)}</div>` : ""}
+          <div class="photo-card-rating"><span class="star-filled">★</span>${escHtml(stars)}</div>
+          ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
+        </div>`;
+      return card;
+    }
+
+    async function handleDelete(e, photoId) {
+      e.stopPropagation();
+      if (!confirm("Delete this photo? This cannot be undone.")) return;
+      try {
+        await deletePhoto(photoId);
+        document.querySelector(`[data-id="${photoId}"]`)?.remove();
+        const grid = document.getElementById("my-photos-grid");
+        if (!grid.querySelector(".photo-card")) {
+          grid.innerHTML = '<p class="placeholder">No photos yet — upload your first one!</p>';
+        }
+      } catch (err) {
+        alert(`Delete failed: ${err.message}`);
+      }
+    }
+
+    // ── Util ──────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>

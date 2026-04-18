@@ -1,0 +1,23 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "<AZURE_STORAGE_CONNECTION_STRING>",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+
+    "COSMOS_DB_CONNECTION_STRING": "<COSMOS_DB_CONNECTION_STRING>",
+    "COSMOS_DB_DATABASE_NAME": "photoshare",
+
+    "BLOB_STORAGE_CONNECTION_STRING": "<AZURE_STORAGE_CONNECTION_STRING>",
+    "BLOB_CONTAINER_NAME": "photos",
+
+    "CDN_ENDPOINT_URL": "",
+
+    "CV_ENDPOINT": "<COMPUTER_VISION_ENDPOINT>",
+    "CV_KEY": "<COMPUTER_VISION_KEY>"
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
+  }
+}
