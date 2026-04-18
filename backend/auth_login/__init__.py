@@ -39,17 +39,18 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return auth_helper.make_response({"error": "password must be at least 4 characters"}, 400)
 
     role = "creator" if username.endswith("@creator") else "consumer"
-
-    try:
-        cosmos_client.ensure_container("auth_users", "/id")
-        cosmos_client.ensure_container("tokens", "/id")
-    except Exception as exc:
-        logging.error("Container ensure failed: %s", exc)
-        return auth_helper.make_response({"error": "Database setup error"}, 500)
-
     now = datetime.now(timezone.utc).isoformat()
 
-    existing = cosmos_client.get_item("auth_users", username, username)
+    # Look up existing user
+    try:
+        existing = cosmos_client.get_item("auth_users", username, username)
+    except Exception as exc:
+        logging.exception("Failed to read auth_users container")
+        return auth_helper.make_response({
+            "error": "Database read error",
+            "detail": str(exc),
+            "type": type(exc).__name__,
+        }, 500)
 
     if existing:
         if not auth_helper.verify_password(password, existing.get("passwordHash", "")):
@@ -66,8 +67,12 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         try:
             cosmos_client.create_item("auth_users", user_doc)
         except Exception as exc:
-            logging.error("Failed to create user: %s", exc)
-            return auth_helper.make_response({"error": "Failed to create account"}, 500)
+            logging.exception("Failed to create user in auth_users")
+            return auth_helper.make_response({
+                "error": "Failed to create account",
+                "detail": str(exc),
+                "type": type(exc).__name__,
+            }, 500)
 
     token = auth_helper.generate_token()
     token_doc = {
@@ -81,9 +86,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         cosmos_client.create_item("tokens", token_doc)
     except Exception as exc:
-        logging.error("Failed to create token: %s", exc)
-        return auth_helper.make_response({"error": "Failed to generate session"}, 500)
+        logging.exception("Failed to create token in tokens container")
+        return auth_helper.make_response({
+            "error": "Failed to generate session",
+            "detail": str(exc),
+            "type": type(exc).__name__,
+        }, 500)
 
+    logging.info("auth_login success for user=%s role=%s", username, role)
     return auth_helper.make_response({
         "token": token,
         "userId": username,

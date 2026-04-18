@@ -3,6 +3,7 @@ Reusable Azure Cosmos DB connection helper.
 One CosmosClient instance is reused across warm invocations (module-level singleton).
 """
 
+import logging
 import os
 from typing import Any, Optional
 
@@ -17,8 +18,10 @@ def get_database():
     if _database is None:
         conn_str = os.environ["COSMOS_DB_CONNECTION_STRING"]
         db_name = os.environ["COSMOS_DB_DATABASE_NAME"]
+        logging.info("cosmos_client: connecting to database=%s", db_name)
         _client = CosmosClient.from_connection_string(conn_str)
         _database = _client.get_database_client(db_name)
+        logging.info("cosmos_client: database client ready")
     return _database
 
 
