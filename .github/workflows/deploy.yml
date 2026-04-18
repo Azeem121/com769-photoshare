@@ -1,0 +1,198 @@
+name: CI/CD — Build, Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+  AZURE_FUNCTIONAPP_NAME: "func-scalableapp-dev"
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "backend"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 — Lint & unit-test the backend (runs on every push and PR)
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          flake8 . \
+            --max-line-length=120 \
+            --exclude=.venv,__pycache__,tests \
+            --ignore=E501,W503 \
+            --count
+        continue-on-error: false
+
+      - name: Run unit tests
+        env:
+          # Unit tests don't need real Azure connections
+          COSMOS_DB_CONNECTION_STRING: "AccountEndpoint=https://dummy.documents.azure.com;AccountKey=dHVmZg==;"
+          COSMOS_DB_DATABASE_NAME: "photoshare"
+          BLOB_STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=https;AccountName=dummy;AccountKey=dHVmZg==;EndpointSuffix=core.windows.net"
+          BLOB_CONTAINER_NAME: "photos"
+          CV_ENDPOINT: ""
+          CV_KEY: ""
+        run: |
+          cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          python -m pytest tests/ -v --tb=short
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/test-results.xml
+          if-no-files-found: ignore
+
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-package
+          path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2 — Deploy backend to Azure Functions (push to main only)
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: test-backend
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net
+    steps:
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-package
+          path: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true
+
+      - name: Smoke-test health endpoint
+        run: |
+          sleep 20
+          curl -f https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/health \
+            || echo "Health check failed — deployment may still be warming up"
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3 — Deploy frontend to Azure Static Web Apps
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: test-backend
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Azure Static Web Apps
+        id: swa-deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "frontend"
+          api_location: ""
+          output_location: ""
+
+      - name: Comment PR with preview URL
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview deployed!**\n\n${steps['swa-deploy'].outputs.static_web_app_url || 'Check Azure portal for preview URL'}`
+            })
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 4 — Close PR staging environment
+# ─────────────────────────────────────────────────────────────────────────────
+  close-staging:
+    name: Close Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    steps:
+      - name: Close staging environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: "close"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 5 — Deploy Bicep infrastructure (only when infra files change on main)
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: test-backend
+    if: >
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      contains(join(github.event.commits.*.modified, ','), 'infrastructure/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Validate Bicep template
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+          template: infrastructure/main.bicep
+          parameters: infrastructure/parameters/dev.parameters.json
+          deploymentMode: Validate
+
+      - name: Deploy Bicep template
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ secrets.AZURE_RG }}
+          template: infrastructure/main.bicep
+          parameters: infrastructure/parameters/dev.parameters.json
+          failOnStdErr: false

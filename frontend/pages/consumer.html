@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoShare — Browse</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <span class="brand">PhotoShare <span class="role-badge consumer">Consumer</span></span>
+    <div class="nav-actions">
+      <form id="search-form" onsubmit="handleSearch(event)" class="search-bar">
+        <input type="text" id="search-input" placeholder="Search by title, location, people..." />
+        <button type="submit" class="btn-secondary">Search</button>
+      </form>
+      <span id="nav-username"></span>
+      <button onclick="logout()" class="btn-secondary">Logout</button>
+    </div>
+  </nav>
+
+  <main class="consumer-layout">
+
+    <!-- Photo Feed -->
+    <section class="feed">
+      <div id="photos-grid" class="photo-grid">
+        <p class="placeholder-text">Loading photos...</p>
+      </div>
+      <div id="load-more-container">
+        <button id="load-more-btn" class="btn-secondary hidden" onclick="loadMore()">Load More</button>
+      </div>
+    </section>
+
+    <!-- Photo Detail Modal -->
+    <div id="photo-modal" class="modal hidden" onclick="closeModal(event)">
+      <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <img id="modal-img" src="" alt="" />
+        <div class="modal-info">
+          <h2 id="modal-title"></h2>
+          <p id="modal-caption"></p>
+          <p id="modal-location" class="meta"></p>
+          <p id="modal-people" class="meta"></p>
+          <p id="modal-creator" class="meta"></p>
+
+          <!-- Rating -->
+          <div class="rating-section">
+            <span>Rate this photo:</span>
+            <div class="stars" id="star-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+            <span id="avg-rating" class="avg-rating"></span>
+          </div>
+
+          <!-- Comments -->
+          <div class="comments-section">
+            <h3>Comments</h3>
+            <div id="comments-list"></div>
+            <form id="comment-form" onsubmit="submitComment(event)">
+              <textarea id="comment-text" placeholder="Add a comment..." rows="2" maxlength="300" required></textarea>
+              <button type="submit" class="btn-primary">Post Comment</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../js/auth.js"></script>
+  <script src="../js/consumer.js"></script>
+</body>
+</html>

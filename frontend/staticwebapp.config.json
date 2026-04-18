@@ -1,0 +1,86 @@
+{
+  "auth": {
+    "rolesSource": "/api/GetRoles",
+    "identityProviders": {
+      "gitHub": {
+        "registration": {
+          "clientIdSettingName": "GITHUB_CLIENT_ID",
+          "clientSecretSettingName": "GITHUB_CLIENT_SECRET"
+        }
+      },
+      "azureActiveDirectory": {
+        "registration": {
+          "openIdIssuer": "https://login.microsoftonline.com/common/v2.0",
+          "clientIdSettingName": "AAD_CLIENT_ID",
+          "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        }
+      }
+    }
+  },
+  "routes": [
+    {
+      "route": "/creator.html",
+      "allowedRoles": ["creator"]
+    },
+    {
+      "route": "/consumer.html",
+      "allowedRoles": ["consumer", "creator"]
+    },
+    {
+      "route": "/api/photos/upload",
+      "allowedRoles": ["creator"]
+    },
+    {
+      "route": "/api/photos/my",
+      "allowedRoles": ["creator"]
+    },
+    {
+      "route": "/api/photos/*/comment",
+      "allowedRoles": ["consumer"]
+    },
+    {
+      "route": "/api/photos/*/rate",
+      "allowedRoles": ["consumer"]
+    },
+    {
+      "route": "/api/health",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/photos",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/photos/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/index.html",
+      "statusCode": 302
+    },
+    "403": {
+      "redirect": "/index.html",
+      "statusCode": 302
+    }
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/shared/*.css",
+      "/shared/*.js",
+      "*.{jpg,jpeg,png,gif,webp,ico,svg}",
+      "/api/*"
+    ]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'self'; img-src 'self' https://*.blob.core.windows.net https://*.azureedge.net data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';"
+  },
+  "mimeTypes": {
+    ".json": "application/json"
+  }
+}

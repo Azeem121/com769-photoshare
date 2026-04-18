@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoShare — Browse</title>
+  <link rel="stylesheet" href="/shared/styles.css" />
+</head>
+<body>
+
+  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="navbar-brand">
+      PhotoShare
+      <span class="role-badge consumer">Consumer</span>
+    </div>
+    <form class="search-bar" id="search-form" onsubmit="handleSearch(event)">
+      <input type="text" id="search-input" placeholder="Search photos…" autocomplete="off" />
+      <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+    </form>
+    <div class="navbar-right">
+      <span class="nav-user" id="nav-username"></span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </nav>
+
+  <!-- ── Controls bar ───────────────────────────────────────────────────── -->
+  <div class="controls-bar">
+    <label for="sort-select">Sort by</label>
+    <select id="sort-select" onchange="applyFilters()">
+      <option value="recent">Most Recent</option>
+      <option value="rating">Highest Rated</option>
+    </select>
+
+    <label for="tag-select">AI Tag</label>
+    <select id="tag-select" onchange="applyFilters()">
+      <option value="">All tags</option>
+    </select>
+  </div>
+
+  <!-- ── Photo Feed ──────────────────────────────────────────────────────── -->
+  <main>
+    <div class="photo-grid" id="photos-grid">
+      <p class="placeholder"><span class="spinner"></span></p>
+    </div>
+    <div class="load-more-bar">
+      <button id="load-more-btn" class="btn btn-secondary hidden" onclick="loadMore()">
+        Load more
+      </button>
+    </div>
+  </main>
+
+  <!-- ── Photo Detail Modal ─────────────────────────────────────────────── -->
+  <div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)">
+    <div class="modal" id="modal" role="dialog" aria-modal="true">
+
+      <div class="modal-image-pane">
+        <img id="modal-img" src="" alt="" />
+      </div>
+
+      <div class="modal-info-pane">
+        <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">&#x2715;</button>
+
+        <h2 class="modal-title" id="modal-title"></h2>
+        <p class="modal-caption" id="modal-caption"></p>
+
+        <div class="modal-meta" id="modal-meta"></div>
+
+        <!-- AI Tags -->
+        <div class="ai-tags" id="modal-ai-tags"></div>
+
+        <!-- Star Rating -->
+        <div class="rating-widget">
+          <div class="stars-input" id="star-input" role="group" aria-label="Rate this photo">
+            <span class="star" data-v="1">&#9733;</span>
+            <span class="star" data-v="2">&#9733;</span>
+            <span class="star" data-v="3">&#9733;</span>
+            <span class="star" data-v="4">&#9733;</span>
+            <span class="star" data-v="5">&#9733;</span>
+          </div>
+          <span class="rating-summary" id="rating-summary"></span>
+        </div>
+
+        <!-- Comments -->
+        <div class="comments-section">
+          <h3>Comments</h3>
+          <div class="comments-list" id="comments-list"></div>
+
+          <form class="comment-form" id="comment-form" onsubmit="submitComment(event)">
+            <textarea id="comment-text" placeholder="Add a comment…" maxlength="1000" required></textarea>
+            <button type="submit" class="btn btn-primary btn-sm">Post</button>
+          </form>
+          <p class="error-text" id="comment-error"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script src="/shared/api.js"></script>
+  <script>
+    // ── State ────────────────────────────────────────────────────────────
+    let currentPage = 1;
+    const PAGE_SIZE = 12;
+    let activeSearch = "";
+    let activeSort  = "recent";
+    let activeTag   = "";
+    let openPhotoId = null;
+    let knownTags   = new Set();
+
+    // ── Boot ─────────────────────────────────────────────────────────────
+    (async () => {
+      const user = await requireAuth("consumer");
+      if (!user) return;
+      setNavUser(user);
+      setupStars();
+      await loadPhotos(true);
+    })();
+
+    // ── Load / Search / Filter ────────────────────────────────────────────
+    function handleSearch(e) {
+      e.preventDefault();
+      activeSearch = document.getElementById("search-input").value.trim();
+      applyFilters();
+    }
+
+    function applyFilters() {
+      activeSort = document.getElementById("sort-select").value;
+      activeTag  = document.getElementById("tag-select").value;
+      loadPhotos(true);
+    }
+
+    async function loadPhotos(reset) {
+      if (reset) {
+        currentPage = 1;
+        document.getElementById("photos-grid").innerHTML =
+          '<p class="placeholder"><span class="spinner"></span></p>';
+      }
+
+      try {
+        const data = await listPhotos({
+          search: activeSearch,
+          sort:   activeSort,
+          tag:    activeTag,
+          page:   currentPage,
+          limit:  PAGE_SIZE,
+        });
+
+        const grid = document.getElementById("photos-grid");
+        if (reset) grid.innerHTML = "";
+
+        if (!data.photos.length && reset) {
+          grid.innerHTML = '<p class="placeholder">No photos found.</p>';
+          document.getElementById("load-more-btn").classList.add("hidden");
+          return;
+        }
+
+        data.photos.forEach(p => {
+          (p.aiTags || []).forEach(t => knownTags.add(t));
+          grid.appendChild(makeCard(p));
+        });
+
+        populateTagFilter();
+
+        const moreBtn = document.getElementById("load-more-btn");
+        moreBtn.classList.toggle("hidden", data.photos.length < PAGE_SIZE);
+      } catch (err) {
+        document.getElementById("photos-grid").innerHTML =
+          `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
+      }
+    }
+
+    function loadMore() {
+      currentPage++;
+      loadPhotos(false);
+    }
+
+    function populateTagFilter() {
+      const sel = document.getElementById("tag-select");
+      const current = sel.value;
+      sel.innerHTML = '<option value="">All tags</option>';
+      [...knownTags].sort().forEach(t => {
+        const opt = document.createElement("option");
+        opt.value = t;
+        opt.textContent = t;
+        if (t === current) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    // ── Card builder ─────────────────────────────────────────────────────
+    function makeCard(photo) {
+      const card = document.createElement("div");
+      card.className = "photo-card";
+      card.onclick = () => openModal(photo.id);
+
+      const stars = photo.avgRating
+        ? "&#9733;".repeat(Math.round(photo.avgRating)) + ` ${photo.avgRating.toFixed(1)}`
+        : "No ratings";
+
+      const tagsHtml = (photo.aiTags || []).slice(0, 3)
+        .map(t => `<span class="ai-tag">${t}</span>`).join("");
+
+      card.innerHTML = `
+        <div class="photo-card-thumb">
+          <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+        </div>
+        <div class="photo-card-body">
+          <div class="photo-card-title">${escHtml(photo.title)}</div>
+          ${photo.location ? `<div class="photo-card-meta">📍 ${escHtml(photo.location)}</div>` : ""}
+          <div class="photo-card-rating"><span class="star-filled">★</span>${stars}</div>
+          ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
+        </div>`;
+      return card;
+    }
+
+    // ── Modal ─────────────────────────────────────────────────────────────
+    async function openModal(photoId) {
+      openPhotoId = photoId;
+      const overlay = document.getElementById("modal-overlay");
+      overlay.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+
+      // Reset
+      document.getElementById("modal-img").src = "";
+      document.getElementById("modal-title").textContent = "Loading…";
+      document.getElementById("modal-caption").textContent = "";
+      document.getElementById("modal-meta").innerHTML = "";
+      document.getElementById("modal-ai-tags").innerHTML = "";
+      document.getElementById("comments-list").innerHTML = "";
+      document.getElementById("rating-summary").textContent = "";
+      document.getElementById("comment-error").textContent = "";
+      resetStars(null);
+
+      try {
+        const photo = await getPhoto(photoId);
+        renderModal(photo);
+      } catch (err) {
+        document.getElementById("modal-title").textContent = `Error: ${err.message}`;
+      }
+    }
+
+    function renderModal(photo) {
+      document.getElementById("modal-img").src = photo.imageUrl;
+      document.getElementById("modal-img").alt = photo.title;
+      document.getElementById("modal-title").textContent = photo.title;
+      document.getElementById("modal-caption").textContent = photo.caption || "";
+
+      // Meta
+      const meta = [];
+      if (photo.location) meta.push(`<span>📍 ${escHtml(photo.location)}</span>`);
+      if (photo.people?.length) meta.push(`<span>👥 ${photo.people.map(escHtml).join(", ")}</span>`);
+      if (photo.uploaderEmail) meta.push(`<span>📷 ${escHtml(photo.uploaderEmail)}</span>`);
+      if (photo.createdAt) meta.push(`<span>🗓 ${new Date(photo.createdAt).toLocaleDateString()}</span>`);
+      document.getElementById("modal-meta").innerHTML = meta.join("");
+
+      // AI Tags
+      const tagsContainer = document.getElementById("modal-ai-tags");
+      if (photo.aiTags?.length) {
+        tagsContainer.innerHTML = photo.aiTags
+          .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
+      }
+
+      // Rating
+      const summary = photo.avgRating
+        ? `Avg ${photo.avgRating.toFixed(1)} / 5 (${photo.ratingCount} rating${photo.ratingCount !== 1 ? "s" : ""})`
+        : "No ratings yet";
+      document.getElementById("rating-summary").textContent = summary;
+      if (photo.ownRating) resetStars(photo.ownRating);
+
+      // Comments
+      renderComments(photo.comments || []);
+    }
+
+    function renderComments(comments) {
+      const list = document.getElementById("comments-list");
+      if (!comments.length) {
+        list.innerHTML = '<p class="no-content">No comments yet. Be the first!</p>';
+        return;
+      }
+      list.innerHTML = comments.map(c => `
+        <div class="comment-item">
+          <div class="comment-author">${escHtml(c.authorName || c.authorEmail)}</div>
+          <div>${escHtml(c.text)}</div>
+        </div>`).join("");
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function closeModal() {
+      document.getElementById("modal-overlay").classList.add("hidden");
+      document.body.style.overflow = "";
+      openPhotoId = null;
+    }
+
+    function handleOverlayClick(e) {
+      if (e.target.id === "modal-overlay") closeModal();
+    }
+
+    // ── Comment submit ────────────────────────────────────────────────────
+    async function submitComment(e) {
+      e.preventDefault();
+      const text = document.getElementById("comment-text").value.trim();
+      const errEl = document.getElementById("comment-error");
+      errEl.textContent = "";
+      if (!text || !openPhotoId) return;
+
+      try {
+        await addComment(openPhotoId, text);
+        document.getElementById("comment-text").value = "";
+        // Refresh comments
+        const photo = await getPhoto(openPhotoId);
+        renderComments(photo.comments || []);
+      } catch (err) {
+        errEl.textContent = err.message;
+      }
+    }
+
+    // ── Star Rating ───────────────────────────────────────────────────────
+    function setupStars() {
+      const stars = document.querySelectorAll("#star-input .star");
+      stars.forEach(star => {
+        star.addEventListener("mouseover", () => highlightStars(+star.dataset.v));
+        star.addEventListener("mouseout",  () => resetStars(null));
+        star.addEventListener("click",     () => submitRating(+star.dataset.v));
+      });
+    }
+
+    function highlightStars(upTo) {
+      document.querySelectorAll("#star-input .star").forEach(s => {
+        s.classList.toggle("lit", +s.dataset.v <= upTo);
+      });
+    }
+
+    function resetStars(selected) {
+      document.querySelectorAll("#star-input .star").forEach(s => {
+        s.classList.toggle("lit", selected !== null && +s.dataset.v <= selected);
+      });
+    }
+
+    async function submitRating(value) {
+      if (!openPhotoId) return;
+      try {
+        const result = await ratePhoto(openPhotoId, value);
+        resetStars(value);
+        const summary = `Avg ${result.avgRating.toFixed(1)} / 5 (${result.ratingCount} rating${result.ratingCount !== 1 ? "s" : ""})`;
+        document.getElementById("rating-summary").textContent = summary;
+      } catch (err) {
+        document.getElementById("comment-error").textContent = `Rating failed: ${err.message}`;
+      }
+    }
+
+    // ── Util ──────────────────────────────────────────────────────────────
+    function escHtml(str) {
+      return String(str ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>

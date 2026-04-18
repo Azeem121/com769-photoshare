@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhotoShare — Creator Dashboard</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <span class="brand">PhotoShare <span class="role-badge creator">Creator</span></span>
+    <div class="nav-actions">
+      <span id="nav-username"></span>
+      <button onclick="logout()" class="btn-secondary">Logout</button>
+    </div>
+  </nav>
+
+  <main class="creator-layout">
+
+    <!-- Upload Panel -->
+    <section class="upload-panel card">
+      <h2>Upload Photo</h2>
+      <form id="upload-form" onsubmit="handleUpload(event)" enctype="multipart/form-data">
+        <div class="file-drop" id="file-drop">
+          <input type="file" id="photo-file" accept="image/*" required onchange="previewPhoto(event)" />
+          <label for="photo-file">Click or drag a photo here</label>
+          <img id="photo-preview" class="hidden" alt="Preview" />
+        </div>
+
+        <input type="text" id="photo-title" placeholder="Title *" required maxlength="100" />
+        <textarea id="photo-caption" placeholder="Caption" maxlength="500" rows="3"></textarea>
+        <input type="text" id="photo-location" placeholder="Location (e.g. Belfast, UK)" maxlength="100" />
+        <input type="text" id="photo-people" placeholder="People tagged (comma-separated)" maxlength="200" />
+
+        <button type="submit" class="btn-primary" id="upload-btn">Upload Photo</button>
+        <p id="upload-status" class="status-msg"></p>
+      </form>
+    </section>
+
+    <!-- My Photos -->
+    <section class="my-photos">
+      <h2>My Photos</h2>
+      <div id="my-photos-grid" class="photo-grid">
+        <p class="placeholder-text">Your uploaded photos will appear here.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="../js/auth.js"></script>
+  <script src="../js/creator.js"></script>
+</body>
+</html>
