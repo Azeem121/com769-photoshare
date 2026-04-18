@@ -9,8 +9,7 @@ import json
 import logging
 
 import azure.functions as func
-import sys, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from shared import auth_helper, cosmos_client
 
 
