@@ -87,11 +87,11 @@
   <script src="/shared/api.js"></script>
   <script>
     // ── Boot ──────────────────────────────────────────────────────────────
-    (async () => {
-      const user = await requireAuth("creator");
+    (function () {
+      const user = requireAuth("creator");
       if (!user) return;
       setNavUser(user);
-      await refreshMyPhotos();
+      refreshMyPhotos();
     })();
 
     // ── File preview ──────────────────────────────────────────────────────

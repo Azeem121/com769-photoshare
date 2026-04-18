@@ -9,15 +9,17 @@ Query parameters:
   limit   : items per page (default 12, max 50)
 """
 
-import json
 import logging
 
 import azure.functions as func
 
-from shared import cosmos_client
+from shared import auth_helper, cosmos_client
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return auth_helper.options_response()
+
     logging.info("photos_list triggered")
 
     search = req.params.get("search", "").strip()
@@ -32,7 +34,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     offset = (page - 1) * limit
 
-    # Build dynamic query
     conditions = []
     parameters = []
 
@@ -55,7 +56,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     query = f"""
         SELECT c.id, c.title, c.caption, c.location, c.people,
-               c.imageUrl, c.uploaderEmail, c.avgRating, c.ratingCount,
+               c.imageUrl, c.uploaderName, c.avgRating, c.ratingCount,
                c.aiTags, c.aiDescription, c.createdAt
         FROM c
         {where_clause}
@@ -67,12 +68,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         photos = cosmos_client.query_items("photos", query, parameters)
     except Exception as exc:
         logging.error("Cosmos DB query failed: %s", exc)
-        return func.HttpResponse(
-            json.dumps({"error": "Failed to retrieve photos"}),
-            status_code=500, mimetype="application/json",
-        )
+        return auth_helper.make_response({"error": "Failed to retrieve photos"}, 500)
 
-    # Count query for pagination metadata
     count_query = f"SELECT VALUE COUNT(1) FROM c {where_clause}"
     try:
         count_result = cosmos_client.query_items("photos", count_query, parameters)
@@ -80,13 +77,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception:
         total = len(photos)
 
-    return func.HttpResponse(
-        json.dumps({
-            "photos": photos,
-            "total": total,
-            "page": page,
-            "limit": limit,
-        }),
-        status_code=200,
-        mimetype="application/json",
-    )
+    return auth_helper.make_response({
+        "photos": photos,
+        "total": total,
+        "page": page,
+        "limit": limit,
+    })

@@ -6,7 +6,7 @@ One CosmosClient instance is reused across warm invocations (module-level single
 import os
 from typing import Any, Optional
 
-from azure.cosmos import CosmosClient, exceptions
+from azure.cosmos import CosmosClient, PartitionKey, exceptions
 
 _client: Optional[CosmosClient] = None
 _database = None
@@ -58,3 +58,10 @@ def query_items(container_name: str, query: str, parameters: Optional[list] = No
         enable_cross_partition_query=True,
     )
     return list(items)
+
+
+def ensure_container(container_name: str, partition_key_path: str) -> None:
+    get_database().create_container_if_not_exists(
+        id=container_name,
+        partition_key=PartitionKey(path=partition_key_path),
+    )

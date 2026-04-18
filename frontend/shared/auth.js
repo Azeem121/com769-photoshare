@@ -1,77 +1,72 @@
 /**
- * auth.js — Azure Static Web Apps authentication helper
+ * auth.js — Token-based authentication helper
  *
- * Calls /.auth/me to get the current user and their roles.
- * Exported functions are used by every page to guard access and
- * populate the navbar.
+ * Tokens and user info are stored in localStorage.
+ * Use @creator suffix in username for creator access (e.g. "alice@creator").
  */
 
-const AUTH_ME_URL = "/.auth/me";
+const PS_TOKEN_KEY = "ps_token";
+const PS_USER_KEY  = "ps_user";
 
-/**
- * Fetch the current user from Azure SWA.
- * Returns null when not logged in.
- * @returns {Promise<{userId:string, userDetails:string, userRoles:string[]}|null>}
- */
-async function getCurrentUser() {
-  try {
-    const res = await fetch(AUTH_ME_URL);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const principal = data.clientPrincipal;
-    return principal && principal.userId ? principal : null;
-  } catch {
-    return null;
-  }
+function getToken() {
+  return localStorage.getItem(PS_TOKEN_KEY);
+}
+
+function getUser() {
+  const raw = localStorage.getItem(PS_USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+function saveSession(token, user) {
+  localStorage.setItem(PS_TOKEN_KEY, token);
+  localStorage.setItem(PS_USER_KEY, JSON.stringify(user));
+}
+
+function clearSession() {
+  localStorage.removeItem(PS_TOKEN_KEY);
+  localStorage.removeItem(PS_USER_KEY);
+}
+
+function logout() {
+  clearSession();
+  window.location.href = "/index.html";
 }
 
 /**
- * Require authentication and redirect unauthenticated users to index.html.
- * Optionally restrict to a specific role (e.g. "creator" or "consumer").
- * Returns the principal object.
+ * Require authentication; optionally restrict to a role.
+ * Redirects to index.html if not authenticated or wrong role.
+ * Returns the user object if authorised.
  */
-async function requireAuth(requiredRole = null) {
-  const user = await getCurrentUser();
+function requireAuth(requiredRole) {
+  const token = getToken();
+  const user  = getUser();
 
-  if (!user) {
+  if (!token || !user) {
     window.location.href = "/index.html";
     return null;
   }
 
-  if (requiredRole && !user.userRoles.includes(requiredRole)) {
-    // Wrong role — redirect to correct page
-    if (user.userRoles.includes("creator")) {
-      window.location.href = "/creator.html";
-    } else {
-      window.location.href = "/consumer.html";
-    }
+  if (requiredRole && user.role !== requiredRole) {
+    window.location.href = user.role === "creator" ? "/creator.html" : "/consumer.html";
     return null;
   }
 
   return user;
 }
 
-/**
- * Redirect a logged-in user to the correct role page.
- * Used on index.html after login.
- */
-async function redirectIfLoggedIn() {
-  const user = await getCurrentUser();
+/** Redirect already-logged-in users to their dashboard. */
+function redirectIfLoggedIn() {
+  const user = getUser();
   if (!user) return;
-  if (user.userRoles.includes("creator")) {
+  if (user.role === "creator") {
     window.location.href = "/creator.html";
-  } else if (user.userRoles.includes("consumer")) {
+  } else {
     window.location.href = "/consumer.html";
   }
 }
 
-/** Populate a navbar element with the user's display name. */
+/** Populate the navbar username element. */
 function setNavUser(user) {
   const el = document.getElementById("nav-username");
-  if (el && user) el.textContent = user.userDetails || "User";
-}
-
-/** Trigger Azure SWA logout. */
-function logout() {
-  window.location.href = "/.auth/logout?post_logout_redirect_uri=/index.html";
+  if (el && user) el.textContent = user.username || "User";
 }

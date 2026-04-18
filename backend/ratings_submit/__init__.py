@@ -9,7 +9,6 @@ After upserting the rating document, the function recalculates and stores
 avgRating and ratingCount on the photo document.
 """
 
-import json
 import logging
 from datetime import datetime, timezone
 
@@ -19,23 +18,23 @@ from shared import auth_helper, cosmos_client
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    if req.method == "OPTIONS":
+        return auth_helper.options_response()
+
     photo_id = req.route_params.get("id", "")
     logging.info("ratings_submit triggered for photo_id=%s", photo_id)
 
     try:
-        principal = auth_helper.require_role(req, "consumer")
+        user = auth_helper.require_role(req, "consumer")
     except PermissionError as exc:
         return auth_helper.json_403(str(exc))
 
-    user_id = auth_helper.get_user_id(principal)
+    user_id = auth_helper.get_user_id(user)
 
     try:
         body = req.get_json()
     except ValueError:
-        return func.HttpResponse(
-            json.dumps({"error": "Request body must be JSON"}),
-            status_code=400, mimetype="application/json",
-        )
+        return auth_helper.make_response({"error": "Request body must be JSON"}, 400)
 
     try:
         rating_value = int(body.get("rating", 0))
@@ -43,12 +42,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         rating_value = 0
 
     if rating_value < 1 or rating_value > 5:
-        return func.HttpResponse(
-            json.dumps({"error": "rating must be an integer between 1 and 5"}),
-            status_code=400, mimetype="application/json",
-        )
+        return auth_helper.make_response({"error": "rating must be an integer between 1 and 5"}, 400)
 
-    # Upsert rating document  (id = userId_photoId ensures one-per-user-per-photo)
     now = datetime.now(timezone.utc).isoformat()
     rating_doc = {
         "id": f"{user_id}_{photo_id}",
@@ -62,12 +57,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         cosmos_client.upsert_item("ratings", rating_doc)
     except Exception as exc:
         logging.error("Failed to upsert rating: %s", exc)
-        return func.HttpResponse(
-            json.dumps({"error": "Failed to save rating"}),
-            status_code=500, mimetype="application/json",
-        )
+        return auth_helper.make_response({"error": "Failed to save rating"}, 500)
 
-    # Recalculate aggregate rating for the photo
     agg_query = """
         SELECT VALUE {
             "count": COUNT(1),
@@ -88,8 +79,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.warning("Aggregate query failed; using estimate: %s", exc)
         count, avg = 1, float(rating_value)
 
-    # Patch the photo document with updated averages
-    # Fetch photo first (cross-partition)
     photo_query = "SELECT * FROM c WHERE c.id = @id"
     photo_params = [{"name": "@id", "value": photo_id}]
     try:
@@ -102,8 +91,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as exc:
         logging.warning("Failed to update photo averages: %s", exc)
 
-    return func.HttpResponse(
-        json.dumps({"avgRating": avg, "ratingCount": count, "yourRating": rating_value}),
-        status_code=200,
-        mimetype="application/json",
-    )
+    return auth_helper.make_response({"avgRating": avg, "ratingCount": count, "yourRating": rating_value})
