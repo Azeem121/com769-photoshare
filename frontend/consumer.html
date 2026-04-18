@@ -109,12 +109,14 @@
     let knownTags   = new Set();
 
     // ── Boot ─────────────────────────────────────────────────────────────
-    (function () {
+    (async function () {
+      console.log("[PhotoShare] consumer.html booting");
       const user = requireAuth("consumer");
+      console.log("[PhotoShare] requireAuth result:", user);
       if (!user) return;
       setNavUser(user);
       setupStars();
-      loadPhotos(true);
+      await loadPhotos(true);
     })();
 
     // ── Load / Search / Filter ────────────────────────────────────────────
@@ -138,6 +140,7 @@
       }
 
       try {
+        console.log("[PhotoShare] calling listPhotos page=%d", currentPage);
         const data = await listPhotos({
           search: activeSearch,
           sort:   activeSort,
@@ -146,11 +149,19 @@
           limit:  PAGE_SIZE,
         });
 
+        console.log("[PhotoShare] listPhotos response:", data);
+
+        if (!data || !data.photos) {
+          document.getElementById("photos-grid").innerHTML =
+            '<p class="placeholder">Unexpected response from server.</p>';
+          return;
+        }
+
         const grid = document.getElementById("photos-grid");
         if (reset) grid.innerHTML = "";
 
         if (!data.photos.length && reset) {
-          grid.innerHTML = '<p class="placeholder">No photos found.</p>';
+          grid.innerHTML = '<p class="placeholder">No photos yet — check back soon!</p>';
           document.getElementById("load-more-btn").classList.add("hidden");
           return;
         }
@@ -165,6 +176,7 @@
         const moreBtn = document.getElementById("load-more-btn");
         moreBtn.classList.toggle("hidden", data.photos.length < PAGE_SIZE);
       } catch (err) {
+        console.error("[PhotoShare] loadPhotos error:", err);
         document.getElementById("photos-grid").innerHTML =
           `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
       }

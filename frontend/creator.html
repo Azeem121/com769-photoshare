@@ -87,11 +87,13 @@
   <script src="/shared/api.js"></script>
   <script>
     // ── Boot ──────────────────────────────────────────────────────────────
-    (function () {
+    (async function () {
+      console.log("[PhotoShare] creator.html booting");
       const user = requireAuth("creator");
+      console.log("[PhotoShare] requireAuth result:", user);
       if (!user) return;
       setNavUser(user);
-      refreshMyPhotos();
+      await refreshMyPhotos();
     })();
 
     // ── File preview ──────────────────────────────────────────────────────
@@ -135,7 +137,15 @@
       btn.innerHTML = '<span class="spinner"></span> Uploading…';
 
       try {
+        console.log("[PhotoShare] uploading photo:", title);
         const result = await uploadPhoto(formData);
+        console.log("[PhotoShare] upload response:", result);
+
+        if (!result) {
+          errEl.textContent = "Upload failed — no response from server.";
+          return;
+        }
+
         okEl.textContent = `"${result.title}" uploaded successfully!`;
         if (result.aiTags?.length) {
           okEl.textContent += ` AI tags: ${result.aiTags.join(", ")}.`;
@@ -144,6 +154,7 @@
         document.getElementById("upload-preview").classList.add("hidden");
         await refreshMyPhotos();
       } catch (err) {
+        console.error("[PhotoShare] upload error:", err);
         errEl.textContent = err.message;
       } finally {
         btn.disabled = false;
@@ -157,7 +168,15 @@
       grid.innerHTML = '<p class="placeholder"><span class="spinner"></span></p>';
 
       try {
+        console.log("[PhotoShare] calling getMyPhotos");
         const data = await getMyPhotos();
+        console.log("[PhotoShare] getMyPhotos response:", data);
+
+        if (!data || !data.photos) {
+          grid.innerHTML = '<p class="placeholder">Unexpected response from server.</p>';
+          return;
+        }
+
         grid.innerHTML = "";
 
         if (!data.photos.length) {
@@ -167,6 +186,7 @@
 
         data.photos.forEach(p => grid.appendChild(makeCreatorCard(p)));
       } catch (err) {
+        console.error("[PhotoShare] refreshMyPhotos error:", err);
         grid.innerHTML = `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
       }
     }
