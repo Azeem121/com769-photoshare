@@ -7,7 +7,7 @@
       "direction": "in",
       "name": "req",
       "methods": ["delete", "options"],
-      "route": "photos/{id}"
+      "route": "photos-delete-disabled/{id}"
     },
     {
       "type": "http",
