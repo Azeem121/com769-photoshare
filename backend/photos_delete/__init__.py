@@ -52,7 +52,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             logging.warning("Blob delete failed (continuing): %s", exc)
 
     try:
-        cosmos_client.delete_item("photos", photo_id, user_id)
+        cosmos_client.delete_item("photos", photo_id, photo_id)
     except Exception as exc:
         logging.error("Cosmos delete failed: %s", exc)
         return auth_helper.make_response({"error": "Failed to delete photo record"}, 500)
