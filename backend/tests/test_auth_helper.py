@@ -92,7 +92,7 @@ def test_get_current_user_valid_token():
     fake_user = {"id": "tok", "userId": "alice", "username": "alice", "role": "consumer"}
     req = _FakeRequest(auth_header="Bearer tok")
     with patch("shared.auth_helper.cosmos_client") as mock_cosmos:
-        mock_cosmos.get_item.return_value = fake_user
+        mock_cosmos.query_items.return_value = [fake_user]
         result = auth_helper.get_current_user(req)
     assert result == fake_user
 
@@ -100,7 +100,7 @@ def test_get_current_user_valid_token():
 def test_get_current_user_token_not_found():
     req = _FakeRequest(auth_header="Bearer badtoken")
     with patch("shared.auth_helper.cosmos_client") as mock_cosmos:
-        mock_cosmos.get_item.return_value = None
+        mock_cosmos.query_items.return_value = []
         result = auth_helper.get_current_user(req)
     assert result is None
 
@@ -117,7 +117,7 @@ def test_require_role_raises_wrong_role():
     fake_user = {"id": "tok", "userId": "bob", "username": "bob", "role": "consumer"}
     req = _FakeRequest(auth_header="Bearer tok")
     with patch("shared.auth_helper.cosmos_client") as mock_cosmos:
-        mock_cosmos.get_item.return_value = fake_user
+        mock_cosmos.query_items.return_value = [fake_user]
         with pytest.raises(PermissionError):
             auth_helper.require_role(req, "creator")
 
@@ -126,7 +126,7 @@ def test_require_role_passes_correct_role():
     fake_user = {"id": "tok", "userId": "alice@creator", "username": "alice@creator", "role": "creator"}
     req = _FakeRequest(auth_header="Bearer tok")
     with patch("shared.auth_helper.cosmos_client") as mock_cosmos:
-        mock_cosmos.get_item.return_value = fake_user
+        mock_cosmos.query_items.return_value = [fake_user]
         user = auth_helper.require_role(req, "creator")
     assert user is not None
     assert user["role"] == "creator"
