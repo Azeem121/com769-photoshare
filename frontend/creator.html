@@ -3,136 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PhotoShare — Creator Dashboard</title>
+  <title>PhotoShare — Creator Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .spinner { display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:4px; }
-    .spinner-blue { border-color:rgba(37,99,235,0.2);border-top-color:#2563eb; }
+    .spinner { display:inline-block;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle; }
+    .spinner-white { border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff; }
+    .spinner-blue  { border:2.5px solid rgba(37,99,235,.15); border-top-color:#2563eb; }
     @keyframes spin { to { transform:rotate(360deg) } }
-    .card-img { transition: transform 0.3s ease; }
-    .photo-card:hover .card-img { transform: scale(1.05); }
-    ::-webkit-scrollbar { width:4px; }
-    ::-webkit-scrollbar-thumb { background:#CBD5E1;border-radius:4px; }
+    .card-img  { transition: transform 0.4s cubic-bezier(.25,.46,.45,.94); }
+    .photo-card:hover .card-img { transform: scale(1.06); }
+    .card-overlay { background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 55%); }
+    .drop-active  { border-color:#2563EB !important; background:#EFF6FF !important; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-thumb { background:#E2E8F0; border-radius:8px; }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-[#F8FAFC] min-h-screen">
 
-<!-- ── Navbar ──────────────────────────────────────────────────────────── -->
-<nav class="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
-  <div class="flex items-center gap-4 px-6 h-14">
-    <div class="flex items-center gap-2.5 flex-shrink-0">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
+  <div class="max-w-screen-2xl mx-auto flex items-center gap-4 px-5" style="height:60px;">
+    <a href="#" class="flex items-center gap-2.5 flex-shrink-0 group">
+      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition">
         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           <circle cx="12" cy="13" r="3"/>
         </svg>
       </div>
-      <span class="font-black text-lg text-gray-900 tracking-tight">PhotoShare</span>
-    </div>
+      <div>
+        <span class="font-black text-lg text-gray-900 tracking-tight">PhotoShare</span>
+        <span class="ml-2 text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Studio</span>
+      </div>
+    </a>
     <div class="flex items-center gap-2 ml-auto">
-      <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5">
+      <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-2xl px-3 py-1.5">
         <div id="user-avatar" class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">?</div>
-        <span id="nav-username" class="text-sm font-semibold text-gray-700 hidden sm:block">…</span>
+        <span id="nav-username" class="text-sm font-semibold text-gray-700 max-w-[120px] truncate">…</span>
         <span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Creator</span>
       </div>
-      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">Sign out</button>
+      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-red-500 px-3 py-2 rounded-xl hover:bg-red-50 transition-all">Sign out</button>
     </div>
   </div>
 </nav>
 
-<!-- ── Page content ────────────────────────────────────────────────────── -->
-<div class="max-w-7xl mx-auto px-6 py-6 flex flex-col lg:flex-row gap-6 items-start">
+<!-- ── Stats strip ─────────────────────────────────────────────────────────── -->
+<div class="bg-white border-b border-gray-100">
+  <div class="max-w-screen-2xl mx-auto px-5 py-3 flex items-center gap-6">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-medium">My Photos</p>
+        <p id="stat-count" class="text-sm font-bold text-gray-900">—</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-medium">Avg Rating</p>
+        <p id="stat-rating" class="text-sm font-bold text-gray-900">—</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-medium">AI Tags Used</p>
+        <p id="stat-tags" class="text-sm font-bold text-gray-900">—</p>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <!-- ── Upload panel ──────────────────────────────────────────────────── -->
-  <div class="w-full lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-20">
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <div class="flex items-center gap-2 mb-5">
-        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-          <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+<!-- ── Main layout ─────────────────────────────────────────────────────────── -->
+<div class="max-w-screen-2xl mx-auto px-5 py-6 flex flex-col lg:flex-row gap-6 items-start">
+
+  <!-- ── Upload panel ──────────────────────────────────────────────────────── -->
+  <div class="w-full lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-[124px]">
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+      <div class="px-6 pt-6 pb-4 border-b border-gray-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <div>
+            <h2 class="font-bold text-gray-900 text-base">Upload Photo</h2>
+            <p class="text-xs text-gray-400">JPEG, PNG, WebP · max 10 MB</p>
+          </div>
         </div>
-        <h2 class="font-bold text-gray-900">Upload Photo</h2>
       </div>
 
-      <form id="upload-form" onsubmit="handleUpload(event)" class="space-y-4">
+      <form id="upload-form" onsubmit="handleUpload(event)" class="px-6 py-5 space-y-4">
 
         <!-- Drop zone -->
-        <div id="drop-zone" class="relative border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 rounded-xl p-6 text-center cursor-pointer transition-all">
+        <div id="drop-zone"
+          class="relative border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-all"
+          ondragover="e=>e.preventDefault()" ondragenter="dzEnter()" ondragleave="dzLeave()" ondrop="dzDrop(event)">
           <input type="file" id="photo-file" accept="image/jpeg,image/png,image/gif,image/webp"
             onchange="handleFile(event)"
-            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-          <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-            <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
-          </svg>
-          <p class="text-sm font-semibold text-gray-500">Click or drag to upload</p>
-          <p class="text-xs text-gray-400 mt-1">JPEG, PNG, GIF, WebP · max 10 MB</p>
+            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+          <div id="dz-default" class="py-7 text-center">
+            <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            </div>
+            <p class="text-sm font-semibold text-gray-600">Click or drop image here</p>
+            <p class="text-xs text-gray-400 mt-1">Supports JPEG, PNG, GIF, WebP</p>
+          </div>
+          <img id="upload-preview" src="" alt="Preview"
+            class="hidden w-full object-cover" style="max-height:180px;" />
         </div>
-        <img id="upload-preview" src="" alt="Preview" class="hidden w-full rounded-xl object-cover max-h-52 border border-gray-100" />
 
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1.5">Title <span class="text-red-400">*</span></label>
           <input type="text" id="photo-title" maxlength="100" required placeholder="Give your photo a title"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition" />
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-gray-600 mb-1.5">Caption</label>
-          <textarea id="photo-caption" maxlength="500" rows="3" placeholder="Tell the story behind this photo…"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition"></textarea>
+          <textarea id="photo-caption" maxlength="500" rows="2" placeholder="Tell the story…"
+            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"></textarea>
         </div>
 
-        <div>
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">Location</label>
-          <input type="text" id="photo-location" maxlength="100" placeholder="e.g. Belfast, UK"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">People Tagged</label>
-          <input type="text" id="photo-people" maxlength="200" placeholder="Alice, Bob, Carol"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-300 transition" />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Location</label>
+            <input type="text" id="photo-location" maxlength="100" placeholder="Belfast, UK"
+              class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5">People</label>
+            <input type="text" id="photo-people" maxlength="200" placeholder="Alice, Bob"
+              class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
+          </div>
         </div>
 
         <button type="submit" id="upload-btn"
-          class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+          class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
           Upload Photo
         </button>
 
-        <p id="upload-error"   class="text-xs text-red-500   font-medium text-center hidden"></p>
-        <p id="upload-success" class="text-xs text-green-600 font-medium text-center hidden"></p>
+        <!-- Status messages -->
+        <div id="upload-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium text-center"></div>
       </form>
     </div>
-  </div>
 
-  <!-- ── My Photos ─────────────────────────────────────────────────────── -->
-  <div class="flex-1 min-w-0">
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <div class="flex items-center justify-between mb-5">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-          </div>
-          <h2 class="font-bold text-gray-900">My Photos</h2>
-        </div>
-        <span id="photo-count" class="text-xs font-semibold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full"></span>
-      </div>
-
-      <div id="my-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        <div class="col-span-full flex flex-col items-center py-16 gap-3 text-gray-400">
-          <span class="spinner spinner-blue" style="width:24px;height:24px;border-width:2px;"></span>
-          <p class="text-sm">Loading your photos…</p>
-        </div>
-      </div>
+    <!-- Tips card -->
+    <div class="mt-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+      <p class="text-xs font-bold text-blue-700 mb-2">💡 Tips</p>
+      <ul class="text-xs text-blue-600 space-y-1.5 leading-relaxed">
+        <li>· Azure Computer Vision automatically generates AI tags</li>
+        <li>· Add a location so consumers can filter by place</li>
+        <li>· Tag people present for easy searching</li>
+      </ul>
     </div>
   </div>
 
+  <!-- ── My Photos ───────────────────────────────────────────────────────────── -->
+  <div class="flex-1 min-w-0">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-gray-900 text-lg">My Photos</h2>
+      <button onclick="refreshGrid()" class="text-xs font-semibold text-gray-500 hover:text-blue-600 bg-white border border-gray-200 hover:border-blue-300 px-3 py-1.5 rounded-xl transition-all shadow-sm">
+        ↻ Refresh
+      </button>
+    </div>
+
+    <div id="my-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+      <div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-400">
+        <span class="spinner spinner-blue" style="width:24px;height:24px;"></span>
+        <p class="text-sm font-medium">Loading your photos…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete confirm modal ─────────────────────────────────────────────────── -->
+<div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background:rgba(0,0,0,.5);backdrop-filter:blur(6px);">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 ring-1 ring-black/5">
+    <div class="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <h3 class="text-base font-bold text-gray-900 text-center mb-1">Delete photo?</h3>
+    <p class="text-sm text-gray-500 text-center mb-5">This will permanently remove the photo and all its ratings and comments.</p>
+    <div class="flex gap-3">
+      <button onclick="cancelDelete()" class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Cancel</button>
+      <button id="confirm-delete-btn" onclick="confirmDelete()" class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-sm font-semibold text-white transition">Delete</button>
+    </div>
+  </div>
 </div>
 
 <script src="/shared/auth.js"></script>
 <script src="/shared/api.js"></script>
 <script>
+  let pendingDeleteId = null;
+
   (async () => {
     const user = requireAuth("creator");
     if (!user) return;
@@ -141,31 +215,41 @@
     await refreshGrid();
   })();
 
+  // Drag-and-drop handlers
+  function dzEnter() { document.getElementById("drop-zone").classList.add("drop-active"); }
+  function dzLeave() { document.getElementById("drop-zone").classList.remove("drop-active"); }
+  function dzDrop(e) {
+    e.preventDefault();
+    dzLeave();
+    const file = e.dataTransfer?.files?.[0];
+    if (file) showPreview(file);
+  }
+
   function handleFile(e) {
     const file = e.target.files[0];
-    if (!file) return;
+    if (file) showPreview(file);
+  }
+
+  function showPreview(file) {
     const preview = document.getElementById("upload-preview");
     preview.src = URL.createObjectURL(file);
     preview.classList.remove("hidden");
-    const dz = document.getElementById("drop-zone");
-    dz.style.borderColor = "#2563EB";
-    dz.style.background  = "#EFF6FF";
+    document.getElementById("dz-default").classList.add("hidden");
+    document.getElementById("drop-zone").classList.add("drop-active");
   }
 
   async function handleUpload(e) {
     e.preventDefault();
-    const errEl = document.getElementById("upload-error");
-    const okEl  = document.getElementById("upload-success");
-    const btn   = document.getElementById("upload-btn");
-    errEl.classList.add("hidden");
-    okEl.classList.add("hidden");
+    const statusEl = document.getElementById("upload-status");
+    const btn = document.getElementById("upload-btn");
+    statusEl.classList.add("hidden");
 
     const file = document.getElementById("photo-file").files[0];
-    if (!file) { show(errEl, "Please select a photo."); return; }
-    if (file.size > 10*1024*1024) { show(errEl, "File must be under 10 MB."); return; }
+    if (!file) { showStatus("error", "Please select a photo first."); return; }
+    if (file.size > 10*1024*1024) { showStatus("error", "File must be under 10 MB."); return; }
 
     const title = document.getElementById("photo-title").value.trim();
-    if (!title) { show(errEl, "Title is required."); return; }
+    if (!title) { showStatus("error", "A title is required."); return; }
 
     const formData = new FormData();
     formData.append("photo",    file);
@@ -175,91 +259,121 @@
     formData.append("people",   document.getElementById("photo-people").value.trim());
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Uploading…';
+    btn.innerHTML = '<span class="spinner spinner-white" style="width:16px;height:16px;margin-right:6px;"></span> Uploading…';
 
     try {
       const result = await uploadPhoto(formData);
-      if (!result) { show(errEl, "No response from server."); return; }
-      let msg = `"${result.title}" uploaded!`;
-      if (result.aiTags?.length) msg += ` AI tags: ${result.aiTags.join(", ")}.`;
-      show(okEl, msg);
+      if (!result) { showStatus("error", "No response from server."); return; }
+      let msg = `"${result.title}" uploaded successfully!`;
+      if (result.aiTags?.length) msg += ` AI tagged: ${result.aiTags.slice(0,4).join(", ")}.`;
+      showStatus("success", msg);
       document.getElementById("upload-form").reset();
       document.getElementById("upload-preview").classList.add("hidden");
-      document.getElementById("drop-zone").style.cssText = "";
+      document.getElementById("dz-default").classList.remove("hidden");
+      document.getElementById("drop-zone").classList.remove("drop-active");
       await refreshGrid();
     } catch (err) {
-      show(errEl, err.message);
+      showStatus("error", err.message);
     } finally {
       btn.disabled = false;
-      btn.innerHTML = "Upload Photo";
+      btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg> Upload Photo`;
     }
   }
 
-  function show(el, msg) { el.textContent = msg; el.classList.remove("hidden"); }
+  function showStatus(type, msg) {
+    const el = document.getElementById("upload-status");
+    el.className = type === "success"
+      ? "rounded-xl px-4 py-3 text-sm font-medium text-center bg-green-50 text-green-700 border border-green-200"
+      : "rounded-xl px-4 py-3 text-sm font-medium text-center bg-red-50 text-red-600 border border-red-200";
+    el.textContent = msg;
+    el.classList.remove("hidden");
+  }
 
   async function refreshGrid() {
     const grid = document.getElementById("my-grid");
-    grid.innerHTML = '<div class="col-span-full flex flex-col items-center py-16 gap-3 text-gray-400"><span class="spinner spinner-blue" style="width:24px;height:24px;border-width:2px;border-color:rgba(37,99,235,.2);border-top-color:#2563eb;"></span><p class="text-sm">Loading…</p></div>';
+    grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-400">
+      <span class="spinner spinner-blue" style="width:24px;height:24px;"></span>
+      <p class="text-sm font-medium">Loading…</p></div>`;
     try {
       const data = await getMyPhotos();
-      if (!data?.photos) { grid.innerHTML = '<div class="col-span-full text-center py-16 text-gray-400 text-sm">Could not load photos.</div>'; return; }
-      const count = data.photos.length;
-      document.getElementById("photo-count").textContent = count ? `${count} photo${count!==1?"s":""}` : "";
+      if (!data?.photos) { grid.innerHTML = empty("Could not load photos."); return; }
+      const photos = data.photos;
+      const count = photos.length;
+      document.getElementById("stat-count").textContent = count || "0";
+
+      if (!count) { grid.innerHTML = emptyState(); return; }
+
+      const avgRating = photos.reduce((s,p)=>s+(p.avgRating||0),0) / count;
+      const totalTags = photos.reduce((s,p)=>s+(p.aiTags?.length||0),0);
+      document.getElementById("stat-rating").textContent = avgRating ? avgRating.toFixed(1) + " ★" : "—";
+      document.getElementById("stat-tags").textContent = totalTags || "0";
+
       grid.innerHTML = "";
-      if (!count) {
-        grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-16 gap-3 text-gray-400">
-          <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-          <p class="font-semibold text-gray-400">No photos yet</p>
-          <p class="text-xs text-gray-400">Upload your first photo using the form.</p>
-        </div>`;
-        return;
-      }
-      data.photos.forEach(p => grid.appendChild(makeCard(p)));
+      photos.forEach(p => grid.appendChild(makeCard(p)));
     } catch (err) {
-      grid.innerHTML = `<div class="col-span-full text-center py-16 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
+      grid.innerHTML = `<div class="col-span-full text-center py-20 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
     }
   }
 
   function makeCard(p) {
     const div = document.createElement("div");
-    div.className = "photo-card group relative bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-all";
+    div.className = "photo-card group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1";
     div.dataset.id = p.id;
-    const tags = (p.aiTags||[]).slice(0,2).map(t=>`<span class="text-xs bg-amber-50 text-amber-600 font-medium px-1.5 py-0.5 rounded-md">${esc(t)}</span>`).join("");
+    const tag = (p.aiTags||[])[0];
     div.innerHTML = `
-      <div class="aspect-square bg-gray-100 overflow-hidden">
+      <div class="aspect-[4/5] bg-gray-200 overflow-hidden">
         <img src="${p.imageUrl}" alt="${esc(p.title)}" loading="lazy" class="card-img w-full h-full object-cover" />
       </div>
-      <button onclick="handleDelete(event,'${p.id}')"
-        class="absolute top-2 right-2 bg-white/90 hover:bg-red-50 border border-gray-200 hover:border-red-300 text-gray-500 hover:text-red-500 text-xs font-semibold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm">
-        Delete
-      </button>
-      <div class="p-3">
-        <p class="text-xs font-semibold text-gray-800 truncate">${esc(p.title)}</p>
-        ${p.location?`<p class="text-xs text-gray-400 truncate mt-0.5">📍 ${esc(p.location)}</p>`:""}
+      <div class="card-overlay absolute inset-0 flex flex-col justify-end p-3 pointer-events-none">
+        <p class="text-white font-semibold text-sm leading-tight drop-shadow line-clamp-2">${esc(p.title)}</p>
         <div class="flex items-center justify-between mt-1.5">
-          <span class="text-xs text-gray-400">${p.avgRating?`<span class="text-amber-400">★</span> ${p.avgRating.toFixed(1)}`:`<span class="text-gray-300">★</span> —`}</span>
-          <div class="flex gap-1">${tags}</div>
+          ${p.location ? `<span class="text-white/70 text-xs truncate max-w-[70%]">📍 ${esc(p.location)}</span>` : '<span></span>'}
+          ${p.avgRating ? `<span class="text-xs font-semibold text-white/90">★ ${p.avgRating.toFixed(1)}</span>` : ""}
         </div>
-      </div>`;
+        ${tag ? `<div class="mt-1"><span class="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full">${esc(tag)}</span></div>` : ""}
+      </div>
+      <button onclick="startDelete(event,'${p.id}')"
+        class="pointer-events-auto absolute top-2.5 right-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg flex items-center gap-1">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete
+      </button>`;
     return div;
   }
 
-  async function handleDelete(e, id) {
+  function emptyState() {
+    return `<div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-300">
+      <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+      <div class="text-center">
+        <p class="font-semibold text-gray-400 text-base">No photos yet</p>
+        <p class="text-sm text-gray-400 mt-1">Upload your first photo using the form on the left.</p>
+      </div>
+    </div>`;
+  }
+
+  function startDelete(e, id) {
     e.stopPropagation();
-    if (!confirm("Delete this photo? This cannot be undone.")) return;
+    pendingDeleteId = id;
+    document.getElementById("delete-modal").classList.remove("hidden");
+  }
+  function cancelDelete() {
+    pendingDeleteId = null;
+    document.getElementById("delete-modal").classList.add("hidden");
+  }
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const btn = document.getElementById("confirm-delete-btn");
+    btn.textContent = "Deleting…"; btn.disabled = true;
     try {
-      await deletePhoto(id);
-      document.querySelector(`[data-id="${id}"]`)?.remove();
+      await deletePhoto(pendingDeleteId);
+      document.querySelector(`[data-id="${pendingDeleteId}"]`)?.remove();
       const remaining = document.querySelectorAll("#my-grid .photo-card").length;
-      document.getElementById("photo-count").textContent = remaining ? `${remaining} photo${remaining!==1?"s":""}` : "";
-      if (!remaining) {
-        document.getElementById("my-grid").innerHTML = `<div class="col-span-full flex flex-col items-center py-16 gap-3 text-gray-400">
-          <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-          <p class="font-semibold text-gray-400">No photos yet</p>
-          <p class="text-xs text-gray-400">Upload your first photo using the form.</p>
-        </div>`;
-      }
+      document.getElementById("stat-count").textContent = remaining || "0";
+      if (!remaining) document.getElementById("my-grid").innerHTML = emptyState();
     } catch (err) { alert(`Delete failed: ${err.message}`); }
+    finally {
+      btn.textContent = "Delete"; btn.disabled = false;
+      cancelDelete();
+    }
   }
 
   function esc(s) {

@@ -6,155 +6,197 @@
   <title>PhotoShare — Browse</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .spinner { display:inline-block;width:16px;height:16px;border:2px solid rgba(37,99,235,0.2);border-top-color:#2563eb;border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle; }
+    .spinner { display:inline-block;width:20px;height:20px;border:2.5px solid rgba(37,99,235,0.15);border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg) } }
-    .card-img { transition: transform 0.35s ease; }
-    .photo-card:hover .card-img { transform: scale(1.06); }
-    .star { cursor:pointer; transition: transform 0.12s; }
-    .star:hover { transform: scale(1.25); }
-    .modal-enter { animation: modal-in 0.2s ease; }
-    @keyframes modal-in { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
-    .overlay-enter { animation: fade-in 0.15s ease; }
-    @keyframes fade-in { from { opacity:0 } to { opacity:1 } }
-    ::-webkit-scrollbar { width:4px; }
-    ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:4px; }
+
+    /* Card hover */
+    .photo-card .card-img  { transition: transform 0.4s cubic-bezier(.25,.46,.45,.94); }
+    .photo-card:hover .card-img { transform: scale(1.07); }
+    .card-overlay { background: linear-gradient(to top, rgba(0,0,0,.75) 0%, rgba(0,0,0,.2) 55%, transparent 100%); }
+
+    /* Modal */
+    .modal-panel { animation: slideUp .22s cubic-bezier(.22,.61,.36,1); }
+    @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(.97) } to { opacity:1; transform:none } }
+    .overlay-bg { animation: fadeIn .18s ease; }
+    @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+
+    /* Stars */
+    .star { cursor:pointer; transition: transform .1s, color .1s; }
+    .star:hover { transform: scale(1.3); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background:#E2E8F0; border-radius:8px; }
+    ::-webkit-scrollbar-thumb:hover { background:#CBD5E1; }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-[#F8FAFC] min-h-screen">
 
-<!-- ── Navbar ──────────────────────────────────────────────────────────── -->
-<nav class="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
-  <div class="flex items-center gap-4 px-6 h-14">
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
+  <div class="max-w-screen-2xl mx-auto flex items-center gap-4 px-5 h-15" style="height:60px;">
 
     <!-- Brand -->
-    <div class="flex items-center gap-2.5 flex-shrink-0">
-      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-        <svg class="w-4.5 h-4.5 text-white w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <a href="#" class="flex items-center gap-2.5 flex-shrink-0 group">
+      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           <circle cx="12" cy="13" r="3"/>
         </svg>
       </div>
       <span class="font-black text-lg text-gray-900 tracking-tight">PhotoShare</span>
-    </div>
+    </a>
 
     <!-- Search -->
-    <div class="flex-1 max-w-md relative">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search-input" placeholder="Search photos, locations, people…"
+    <div class="flex-1 max-w-lg relative">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Search photos, places, people…"
         onkeydown="if(event.key==='Enter')applySearch()"
-        class="w-full pl-9 pr-4 py-2 bg-gray-100 border border-transparent rounded-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition" />
+        class="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-transparent rounded-2xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100/70 transition-all" />
     </div>
 
-    <!-- Right -->
+    <!-- Right controls -->
     <div class="flex items-center gap-2 ml-auto">
-      <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5">
+      <!-- user pill -->
+      <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-2xl px-3 py-1.5">
         <div id="user-avatar" class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">?</div>
-        <span id="nav-username" class="text-sm font-semibold text-gray-700 hidden sm:block">…</span>
+        <span id="nav-username" class="text-sm font-semibold text-gray-700 max-w-[120px] truncate">…</span>
         <span class="text-xs font-bold px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Consumer</span>
       </div>
-      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">Sign out</button>
+      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-red-500 px-3 py-2 rounded-xl hover:bg-red-50 transition-all">Sign out</button>
     </div>
   </div>
 </nav>
 
-<!-- ── Filter bar ──────────────────────────────────────────────────────── -->
-<div class="bg-white border-b border-gray-100 px-6 py-2.5 flex items-center gap-4 flex-wrap">
-  <div class="flex items-center gap-2">
-    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort</span>
-    <select id="sort-select" onchange="applyFilters()"
-      class="text-sm font-medium text-gray-700 bg-gray-100 border-0 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
-      <option value="recent">Most Recent</option>
-      <option value="rating">Top Rated</option>
-    </select>
-  </div>
-  <div class="flex items-center gap-2">
-    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tag</span>
-    <select id="tag-select" onchange="applyFilters()"
-      class="text-sm font-medium text-gray-700 bg-gray-100 border-0 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
-      <option value="">All Tags</option>
-    </select>
-  </div>
-  <div class="flex items-center gap-2 ml-auto">
-    <button onclick="applySearch()" class="text-sm font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition">Search</button>
-    <button id="clear-btn" onclick="clearSearch()" class="text-sm font-semibold text-gray-500 hover:text-gray-700 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition hidden">✕ Clear</button>
-    <span id="result-count" class="text-xs text-gray-400 font-medium"></span>
+<!-- ── Filter bar ───────────────────────────────────────────────────────────── -->
+<div class="sticky top-[60px] z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+  <div class="max-w-screen-2xl mx-auto px-5 py-2.5 flex items-center gap-3 flex-wrap">
+
+    <!-- Sort -->
+    <div class="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5">
+      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+      <select id="sort-select" onchange="applyFilters()"
+        class="text-xs font-semibold text-gray-600 bg-transparent border-0 focus:outline-none cursor-pointer pr-1">
+        <option value="recent">Most Recent</option>
+        <option value="rating">Top Rated</option>
+      </select>
+    </div>
+
+    <!-- Tag filter -->
+    <div class="flex items-center gap-1.5 bg-gray-100 rounded-xl px-3 py-1.5">
+      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+      <select id="tag-select" onchange="applyFilters()"
+        class="text-xs font-semibold text-gray-600 bg-transparent border-0 focus:outline-none cursor-pointer pr-1">
+        <option value="">All Tags</option>
+      </select>
+    </div>
+
+    <!-- Search btn -->
+    <button onclick="applySearch()"
+      class="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl transition">
+      Search
+    </button>
+    <button id="clear-btn" onclick="clearSearch()"
+      class="hidden text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl transition">
+      ✕ Clear
+    </button>
+
+    <span id="result-count" class="ml-auto text-xs font-medium text-gray-400"></span>
   </div>
 </div>
 
-<!-- ── Grid ────────────────────────────────────────────────────────────── -->
-<main class="px-6 py-6">
-  <div id="photos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-    <div class="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
-      <span class="spinner" style="width:28px;height:28px;border-width:3px;"></span>
-      <p class="text-sm">Loading photos…</p>
+<!-- ── Grid ─────────────────────────────────────────────────────────────────── -->
+<main class="max-w-screen-2xl mx-auto px-5 py-7">
+  <div id="photos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
+    <div class="col-span-full flex flex-col items-center justify-center py-28 gap-4 text-gray-400">
+      <span class="spinner"></span>
+      <p class="text-sm font-medium">Loading photos…</p>
     </div>
   </div>
-  <div class="text-center mt-6">
+  <div class="text-center mt-8">
     <button id="load-more-btn" onclick="loadMore()"
-      class="hidden px-6 py-2.5 border border-gray-200 rounded-full text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition">
-      Load more
+      class="hidden px-7 py-2.5 bg-white border border-gray-200 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-2xl text-sm font-semibold text-gray-600 shadow-sm transition-all">
+      Load more photos
     </button>
   </div>
 </main>
 
-<!-- ── Modal ───────────────────────────────────────────────────────────── -->
-<div id="modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overlay-enter" onclick="handleOverlayClick(event)">
-  <div class="modal-enter bg-white rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col md:flex-row overflow-hidden shadow-2xl">
+<!-- ── Modal ────────────────────────────────────────────────────────────────── -->
+<div id="modal-overlay" class="hidden fixed inset-0 z-50 overlay-bg flex items-center justify-center p-3 sm:p-6"
+  style="background:rgba(0,0,0,.65);backdrop-filter:blur(8px);"
+  onclick="handleOverlayClick(event)">
 
-    <!-- Image -->
-    <div class="bg-gray-900 md:w-[55%] flex-shrink-0 flex items-center justify-center min-h-[240px]">
-      <img id="modal-img" src="" alt="" class="w-full h-full object-contain max-h-[92vh]" />
+  <div class="modal-panel bg-white rounded-2xl w-full max-w-5xl max-h-[94vh] flex flex-col md:flex-row overflow-hidden shadow-2xl ring-1 ring-black/5">
+
+    <!-- ── Left: image ── -->
+    <div class="bg-gray-950 md:w-[56%] flex-shrink-0 flex items-center justify-center min-h-[220px] relative">
+      <img id="modal-img" src="" alt="" class="w-full h-full object-contain max-h-[94vh] md:max-h-[94vh]" />
+      <!-- close on mobile -->
+      <button onclick="closeModal()" class="md:hidden absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 flex items-center justify-center text-white transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
     </div>
 
-    <!-- Info -->
-    <div class="flex flex-col flex-1 overflow-y-auto">
+    <!-- ── Right: info ── -->
+    <div class="flex flex-col flex-1 overflow-hidden">
+
       <!-- Header -->
-      <div class="flex items-start justify-between p-5 border-b border-gray-100">
+      <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-gray-100 flex-shrink-0">
         <div class="flex-1 pr-4">
-          <h2 id="modal-title" class="text-lg font-bold text-gray-900 leading-snug">Loading…</h2>
-          <p id="modal-caption" class="text-sm text-gray-500 mt-1 leading-relaxed"></p>
+          <h2 id="modal-title" class="text-xl font-bold text-gray-900 leading-tight">Loading…</h2>
+          <p id="modal-caption" class="text-sm text-gray-500 mt-1.5 leading-relaxed"></p>
         </div>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition flex-shrink-0">
+        <button onclick="closeModal()" class="hidden md:flex w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 items-center justify-center text-gray-500 transition flex-shrink-0">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
-      <!-- Meta -->
-      <div id="modal-meta" class="px-5 py-3 border-b border-gray-100 space-y-1.5 text-sm text-gray-500"></div>
+      <!-- Scrollable body -->
+      <div class="flex-1 overflow-y-auto">
 
-      <!-- AI tags -->
-      <div id="modal-tags" class="px-5 py-3 border-b border-gray-100 flex flex-wrap gap-1.5 hidden"></div>
+        <!-- Meta -->
+        <div id="modal-meta" class="px-6 py-3 border-b border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500"></div>
 
-      <!-- Rating -->
-      <div class="px-5 py-3 border-b border-gray-100">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Rate this photo</p>
-        <div class="flex items-center gap-3">
-          <div id="star-input" class="flex gap-0.5">
-            <span class="star text-2xl text-gray-200" data-v="1">★</span>
-            <span class="star text-2xl text-gray-200" data-v="2">★</span>
-            <span class="star text-2xl text-gray-200" data-v="3">★</span>
-            <span class="star text-2xl text-gray-200" data-v="4">★</span>
-            <span class="star text-2xl text-gray-200" data-v="5">★</span>
+        <!-- AI Tags -->
+        <div id="modal-tags" class="hidden px-6 py-3 border-b border-gray-100">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">AI Tags</p>
+          <div id="modal-tags-inner" class="flex flex-wrap gap-1.5"></div>
+        </div>
+
+        <!-- Rating -->
+        <div class="px-6 py-4 border-b border-gray-100">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">Your Rating</p>
+          <div class="flex items-center gap-3">
+            <div id="star-input" class="flex gap-1">
+              <span class="star text-[26px] leading-none" data-v="1" style="color:#E5E7EB;">★</span>
+              <span class="star text-[26px] leading-none" data-v="2" style="color:#E5E7EB;">★</span>
+              <span class="star text-[26px] leading-none" data-v="3" style="color:#E5E7EB;">★</span>
+              <span class="star text-[26px] leading-none" data-v="4" style="color:#E5E7EB;">★</span>
+              <span class="star text-[26px] leading-none" data-v="5" style="color:#E5E7EB;">★</span>
+            </div>
+            <span id="rating-summary" class="text-xs font-medium text-gray-400 leading-snug"></span>
           </div>
-          <span id="rating-summary" class="text-xs text-gray-400 font-medium"></span>
         </div>
-      </div>
 
-      <!-- Comments -->
-      <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
-        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Comments</p>
-        <div id="comments-list" class="flex-1 overflow-y-auto space-y-2 max-h-40 pr-1">
-          <p class="text-sm text-gray-400">No comments yet.</p>
+        <!-- Comments -->
+        <div class="px-6 py-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Comments</p>
+          <div id="comments-list" class="space-y-2 max-h-44 overflow-y-auto pr-0.5 mb-4">
+            <p class="text-sm text-gray-400">No comments yet.</p>
+          </div>
+          <form onsubmit="submitComment(event)" class="flex gap-2">
+            <input type="text" id="comment-text" maxlength="1000" placeholder="Add a comment…"
+              class="flex-1 px-3.5 py-2.5 bg-gray-100 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all" />
+            <button type="submit" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm font-semibold rounded-xl transition-all shadow-sm">
+              Post
+            </button>
+          </form>
+          <p id="comment-error" class="text-xs text-red-500 font-medium mt-1.5"></p>
         </div>
-        <form onsubmit="submitComment(event)" class="flex gap-2 pt-2 border-t border-gray-100">
-          <input type="text" id="comment-text" maxlength="1000" placeholder="Write a comment…"
-            class="flex-1 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition" />
-          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">Post</button>
-        </form>
-        <p id="comment-error" class="text-xs text-red-500 font-medium"></p>
       </div>
     </div>
   </div>
@@ -181,14 +223,12 @@
     document.getElementById("clear-btn").classList.toggle("hidden", !activeSearch);
     applyFilters();
   }
-
   function clearSearch() {
     document.getElementById("search-input").value = "";
     activeSearch = "";
     document.getElementById("clear-btn").classList.add("hidden");
     applyFilters();
   }
-
   function applyFilters() {
     activeSort = document.getElementById("sort-select").value;
     activeTag  = document.getElementById("tag-select").value;
@@ -199,32 +239,30 @@
     if (reset) {
       currentPage = 1;
       document.getElementById("photos-grid").innerHTML =
-        '<div class="col-span-full flex flex-col items-center py-24 gap-3 text-gray-400"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span><p class="text-sm">Loading…</p></div>';
+        '<div class="col-span-full flex flex-col items-center py-28 gap-4 text-gray-400"><span class="spinner"></span><p class="text-sm font-medium">Loading…</p></div>';
     }
     try {
       const data = await listPhotos({ search: activeSearch, sort: activeSort, tag: activeTag, page: currentPage, limit: PAGE_SIZE });
       if (!data?.photos) return;
-
       const grid = document.getElementById("photos-grid");
       if (reset) grid.innerHTML = "";
-
       if (!data.photos.length && reset) {
-        grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-24 gap-3 text-gray-400">
-          <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
-          <p class="font-semibold text-gray-400">${activeSearch ? `No results for "${esc(activeSearch)}"` : "No photos yet — check back soon!"}</p>
+        grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-28 gap-4 text-gray-300">
+          <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+          <p class="font-semibold text-gray-400 text-base">${activeSearch ? `No results for "${esc(activeSearch)}"` : "No photos yet"}</p>
+          <p class="text-sm text-gray-400">Check back soon or try a different search</p>
         </div>`;
         document.getElementById("load-more-btn").classList.add("hidden");
         document.getElementById("result-count").textContent = "";
         return;
       }
-
       data.photos.forEach(p => { (p.aiTags||[]).forEach(t => knownTags.add(t)); grid.appendChild(makeCard(p)); });
       updateTagFilter();
       document.getElementById("result-count").textContent = data.total ? `${data.total} photo${data.total!==1?"s":""}` : "";
       document.getElementById("load-more-btn").classList.toggle("hidden", data.photos.length < PAGE_SIZE);
     } catch (err) {
       document.getElementById("photos-grid").innerHTML =
-        `<div class="col-span-full text-center py-24 text-red-400 text-sm">Failed to load: ${esc(err.message)}</div>`;
+        `<div class="col-span-full text-center py-28 text-red-400 text-sm font-medium">Failed to load: ${esc(err.message)}</div>`;
     }
   }
 
@@ -242,21 +280,22 @@
 
   function makeCard(photo) {
     const div = document.createElement("div");
-    div.className = "photo-card group relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer";
+    div.className = "photo-card group relative rounded-2xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1";
     div.onclick = () => openModal(photo.id);
-    const rating = photo.avgRating ? `<span class="text-amber-400">★</span> ${photo.avgRating.toFixed(1)}` : `<span class="text-gray-300">★</span> —`;
-    const tags = (photo.aiTags||[]).slice(0,2).map(t=>`<span class="text-xs bg-blue-50 text-blue-600 font-medium px-1.5 py-0.5 rounded-md">${esc(t)}</span>`).join("");
+    const stars = photo.avgRating ? `<span class="text-amber-400">★</span> ${photo.avgRating.toFixed(1)}` : "";
+    const tag = (photo.aiTags||[])[0];
     div.innerHTML = `
-      <div class="aspect-square bg-gray-100 overflow-hidden">
-        <img src="${photo.imageUrl}" alt="${esc(photo.title)}" loading="lazy" class="card-img w-full h-full object-cover" />
+      <div class="aspect-[4/5] bg-gray-200 overflow-hidden">
+        <img src="${photo.imageUrl}" alt="${esc(photo.title)}" loading="lazy"
+          class="card-img w-full h-full object-cover" />
       </div>
-      <div class="p-2.5">
-        <p class="text-xs font-semibold text-gray-800 truncate">${esc(photo.title)}</p>
-        ${photo.location?`<p class="text-xs text-gray-400 truncate mt-0.5">📍 ${esc(photo.location)}</p>`:""}
+      <div class="card-overlay absolute inset-0 flex flex-col justify-end p-3">
+        <p class="text-white font-semibold text-sm leading-tight drop-shadow line-clamp-2">${esc(photo.title)}</p>
         <div class="flex items-center justify-between mt-1.5">
-          <span class="text-xs text-gray-400 font-medium">${rating}</span>
-          <div class="flex gap-1">${tags}</div>
+          ${photo.location ? `<span class="text-white/70 text-xs truncate max-w-[70%]">📍 ${esc(photo.location)}</span>` : '<span></span>'}
+          ${stars ? `<span class="text-xs font-semibold text-white/90">${stars}</span>` : ""}
         </div>
+        ${tag ? `<div class="mt-1.5"><span class="text-xs font-semibold bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">${esc(tag)}</span></div>` : ""}
       </div>`;
     return div;
   }
@@ -265,18 +304,21 @@
     openPhotoId = photoId;
     document.getElementById("modal-overlay").classList.remove("hidden");
     document.body.style.overflow = "hidden";
+    // reset
     document.getElementById("modal-img").src = "";
     document.getElementById("modal-title").textContent = "Loading…";
     document.getElementById("modal-caption").textContent = "";
     document.getElementById("modal-meta").innerHTML = "";
-    document.getElementById("modal-tags").innerHTML = "";
     document.getElementById("modal-tags").classList.add("hidden");
+    document.getElementById("modal-tags-inner").innerHTML = "";
     document.getElementById("comments-list").innerHTML = "<p class='text-sm text-gray-400'>Loading…</p>";
     document.getElementById("rating-summary").textContent = "";
     document.getElementById("comment-error").textContent = "";
     resetStars(null);
     try { renderModal(await getPhoto(photoId)); }
-    catch (err) { document.getElementById("modal-title").textContent = "Failed to load photo."; }
+    catch (err) {
+      document.getElementById("modal-title").textContent = "Failed to load photo.";
+    }
   }
 
   function renderModal(p) {
@@ -286,33 +328,40 @@
     document.getElementById("modal-caption").textContent = p.caption || "";
 
     const meta = [];
-    if (p.location) meta.push(`<div class="flex items-center gap-1.5">📍 <span>${esc(p.location)}</span></div>`);
-    if (p.people?.length) meta.push(`<div class="flex items-center gap-1.5">👥 <span>${p.people.map(esc).join(", ")}</span></div>`);
-    if (p.uploaderName) meta.push(`<div class="flex items-center gap-1.5">📷 <span class="font-medium text-gray-700">${esc(p.uploaderName)}</span></div>`);
-    if (p.createdAt) meta.push(`<div class="flex items-center gap-1.5">🗓 <span>${new Date(p.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span></div>`);
+    if (p.uploaderName) meta.push(`<span class="inline-flex items-center gap-1">📷 <strong class="text-gray-700">${esc(p.uploaderName)}</strong></span>`);
+    if (p.location)     meta.push(`<span class="inline-flex items-center gap-1">📍 ${esc(p.location)}</span>`);
+    if (p.people?.length) meta.push(`<span class="inline-flex items-center gap-1">👥 ${p.people.map(esc).join(", ")}</span>`);
+    if (p.createdAt)    meta.push(`<span class="inline-flex items-center gap-1">🗓 ${new Date(p.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span>`);
     document.getElementById("modal-meta").innerHTML = meta.join("");
 
-    const tagsEl = document.getElementById("modal-tags");
     if (p.aiTags?.length) {
-      tagsEl.innerHTML = p.aiTags.map(t=>`<span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-lg">${esc(t)}</span>`).join("");
-      tagsEl.classList.remove("hidden");
+      document.getElementById("modal-tags-inner").innerHTML =
+        p.aiTags.map(t=>`<span class="text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-full">${esc(t)}</span>`).join("");
+      document.getElementById("modal-tags").classList.remove("hidden");
     }
 
-    const sum = p.avgRating
+    document.getElementById("rating-summary").textContent = p.avgRating
       ? `${p.avgRating.toFixed(1)} / 5 · ${p.ratingCount} rating${p.ratingCount!==1?"s":""}`
-      : "No ratings yet";
-    document.getElementById("rating-summary").textContent = sum;
+      : "No ratings yet — be the first!";
     if (p.ownRating) resetStars(p.ownRating);
     renderComments(p.comments || []);
   }
 
   function renderComments(comments) {
     const list = document.getElementById("comments-list");
-    if (!comments.length) { list.innerHTML = "<p class='text-sm text-gray-400'>No comments yet. Be the first!</p>"; return; }
+    if (!comments.length) {
+      list.innerHTML = "<p class='text-sm text-gray-400 italic'>No comments yet. Be the first!</p>";
+      return;
+    }
     list.innerHTML = comments.map(c=>`
-      <div class="bg-gray-50 rounded-lg px-3 py-2">
-        <p class="text-xs font-semibold text-blue-600 mb-0.5">${esc(c.authorName||"User")}</p>
-        <p class="text-xs text-gray-700">${esc(c.text)}</p>
+      <div class="flex gap-2.5">
+        <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
+          ${esc((c.authorName||"?")[0]).toUpperCase()}
+        </div>
+        <div class="bg-gray-50 rounded-xl px-3 py-2 flex-1">
+          <p class="text-xs font-bold text-gray-800 mb-0.5">${esc(c.authorName||"User")}</p>
+          <p class="text-xs text-gray-600 leading-relaxed">${esc(c.text)}</p>
+        </div>
       </div>`).join("");
     list.scrollTop = list.scrollHeight;
   }
@@ -322,14 +371,15 @@
     document.body.style.overflow = "";
     openPhotoId = null;
   }
-
   function handleOverlayClick(e) { if (e.target.id === "modal-overlay") closeModal(); }
+
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
   async function submitComment(e) {
     e.preventDefault();
     const input = document.getElementById("comment-text");
-    const text = input.value.trim();
     const errEl = document.getElementById("comment-error");
+    const text = input.value.trim();
     errEl.textContent = "";
     if (!text || !openPhotoId) return;
     try {
@@ -346,19 +396,16 @@
       s.addEventListener("click",     () => submitRating(+s.dataset.v));
     });
   }
-
   function highlightStars(n) {
     document.querySelectorAll("#star-input .star").forEach(s => {
       s.style.color = +s.dataset.v <= n ? "#F59E0B" : "#E5E7EB";
     });
   }
-
   function resetStars(sel) {
     document.querySelectorAll("#star-input .star").forEach(s => {
       s.style.color = (sel !== null && +s.dataset.v <= sel) ? "#F59E0B" : "#E5E7EB";
     });
   }
-
   async function submitRating(value) {
     if (!openPhotoId) return;
     try {
