@@ -8,70 +8,90 @@
 </head>
 <body>
 
-  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
-  <nav class="navbar">
-    <div class="navbar-brand">
-      PhotoShare
-      <span class="role-badge consumer">Consumer</span>
-    </div>
-    <form class="search-bar" id="search-form" onsubmit="handleSearch(event)">
-      <input type="text" id="search-input" placeholder="Search photos…" autocomplete="off" />
-      <button type="submit" class="btn btn-secondary btn-sm">Search</button>
-    </form>
-    <div class="navbar-right">
-      <span class="nav-user" id="nav-username"></span>
-      <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
-    </div>
-  </nav>
-
-  <!-- ── Controls bar ───────────────────────────────────────────────────── -->
-  <div class="controls-bar">
-    <label for="sort-select">Sort by</label>
-    <select id="sort-select" onchange="applyFilters()">
-      <option value="recent">Most Recent</option>
-      <option value="rating">Highest Rated</option>
-    </select>
-
-    <label for="tag-select">AI Tag</label>
-    <select id="tag-select" onchange="applyFilters()">
-      <option value="">All tags</option>
-    </select>
+<!-- ── Navbar ───────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="7" fill="#2563EB"/>
+      <path d="M6 20l5-6 4 5 3-3 4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="19" cy="10" r="2" fill="#fff"/>
+    </svg>
+    PhotoShare
   </div>
 
-  <!-- ── Photo Feed ──────────────────────────────────────────────────────── -->
-  <main>
-    <div class="photo-grid" id="photos-grid">
-      <p class="placeholder"><span class="spinner"></span></p>
+  <div class="navbar-search">
+    <span class="navbar-search-icon">&#128269;</span>
+    <input type="text" id="search-input" placeholder="Search photos, places, people…"
+           onkeydown="if(event.key==='Enter') applySearch()" />
+  </div>
+
+  <div class="navbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar-initials">?</div>
+      <span id="nav-username">…</span>
+      <span class="role-pill consumer">Consumer</span>
     </div>
-    <div class="load-more-bar">
-      <button id="load-more-btn" class="btn btn-secondary hidden" onclick="loadMore()">
-        Load more
-      </button>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
+
+<!-- ── Controls bar ──────────────────────────────────────────────────────── -->
+<div class="controls-bar">
+  <span class="form-label">Sort</span>
+  <select id="sort-select" onchange="applyFilters()">
+    <option value="recent">Most Recent</option>
+    <option value="rating">Top Rated</option>
+  </select>
+  <div class="controls-sep"></div>
+  <span class="form-label">Tag</span>
+  <select id="tag-select" onchange="applyFilters()">
+    <option value="">All Tags</option>
+  </select>
+  <div class="controls-sep"></div>
+  <button class="btn btn-outline btn-sm" onclick="applySearch()">&#128269; Search</button>
+  <button class="btn btn-ghost btn-sm" onclick="clearSearch()" id="clear-search-btn" style="display:none">&#10005; Clear</button>
+  <span id="result-count" style="font-size:0.8rem;color:var(--text-3);margin-left:4px;"></span>
+</div>
+
+<!-- ── Photo Grid ────────────────────────────────────────────────────────── -->
+<main>
+  <div class="photo-grid" id="photos-grid">
+    <div class="placeholder">
+      <div class="placeholder-icon">&#128247;</div>
+      <span class="spinner"></span>
+      <p>Loading photos…</p>
     </div>
-  </main>
+  </div>
+  <div class="load-more-bar">
+    <button id="load-more-btn" class="btn btn-outline hidden" onclick="loadMore()">Load more photos</button>
+  </div>
+</main>
 
-  <!-- ── Photo Detail Modal ─────────────────────────────────────────────── -->
-  <div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)">
-    <div class="modal" id="modal" role="dialog" aria-modal="true">
+<!-- ── Photo Detail Modal ────────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
 
-      <div class="modal-image-pane">
-        <img id="modal-img" src="" alt="" />
-      </div>
+    <div class="modal-image-pane">
+      <img id="modal-img" src="" alt="" />
+    </div>
 
-      <div class="modal-info-pane">
-        <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">&#x2715;</button>
+    <div class="modal-info-pane">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">&#215;</button>
 
-        <h2 class="modal-title" id="modal-title"></h2>
-        <p class="modal-caption" id="modal-caption"></p>
+      <h2 class="modal-title" id="modal-title">Loading…</h2>
+      <p class="modal-caption" id="modal-caption"></p>
 
-        <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-meta" id="modal-meta"></div>
 
-        <!-- AI Tags -->
-        <div class="ai-tags" id="modal-ai-tags"></div>
+      <div class="ai-tags" id="modal-ai-tags"></div>
 
-        <!-- Star Rating -->
-        <div class="rating-widget">
-          <div class="stars-input" id="star-input" role="group" aria-label="Rate this photo">
+      <div class="modal-divider"></div>
+
+      <!-- Rating -->
+      <div class="rating-widget">
+        <span class="rating-label">Rate this photo</span>
+        <div class="stars-row">
+          <div class="stars-input" id="star-input" role="group" aria-label="Star rating">
             <span class="star" data-v="1">&#9733;</span>
             <span class="star" data-v="2">&#9733;</span>
             <span class="star" data-v="3">&#9733;</span>
@@ -80,293 +100,294 @@
           </div>
           <span class="rating-summary" id="rating-summary"></span>
         </div>
+      </div>
 
-        <!-- Comments -->
-        <div class="comments-section">
-          <h3>Comments</h3>
-          <div class="comments-list" id="comments-list"></div>
+      <div class="modal-divider"></div>
 
-          <form class="comment-form" id="comment-form" onsubmit="submitComment(event)">
-            <textarea id="comment-text" placeholder="Add a comment…" maxlength="1000" required></textarea>
-            <button type="submit" class="btn btn-primary btn-sm">Post</button>
-          </form>
-          <p class="error-text" id="comment-error"></p>
+      <!-- Comments -->
+      <div class="comments-section">
+        <span class="section-title">Comments</span>
+        <div class="comments-list" id="comments-list">
+          <p class="no-content">No comments yet. Be the first!</p>
         </div>
+        <form class="comment-form" id="comment-form" onsubmit="submitComment(event)">
+          <textarea class="form-control" id="comment-text"
+                    placeholder="Write a comment…" maxlength="1000" required></textarea>
+          <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+        </form>
+        <p class="error-text" id="comment-error"></p>
       </div>
     </div>
+
   </div>
+</div>
 
-  <script src="/shared/auth.js"></script>
-  <script src="/shared/api.js"></script>
-  <script>
-    // ── State ────────────────────────────────────────────────────────────
-    let currentPage = 1;
-    const PAGE_SIZE = 12;
-    let activeSearch = "";
-    let activeSort  = "recent";
-    let activeTag   = "";
-    let openPhotoId = null;
-    let knownTags   = new Set();
+<script src="/shared/auth.js"></script>
+<script src="/shared/api.js"></script>
+<script>
+  // ── State ────────────────────────────────────────────────────────────────
+  let currentPage   = 1;
+  const PAGE_SIZE   = 12;
+  let activeSearch  = "";
+  let activeSort    = "recent";
+  let activeTag     = "";
+  let openPhotoId   = null;
+  let knownTags     = new Set();
 
-    // ── Boot ─────────────────────────────────────────────────────────────
-    (async function () {
-      console.log("[PhotoShare] consumer.html booting");
-      const user = requireAuth("consumer");
-      console.log("[PhotoShare] requireAuth result:", user);
-      if (!user) return;
-      setNavUser(user);
-      setupStars();
-      await loadPhotos(true);
-    })();
+  // ── Boot ─────────────────────────────────────────────────────────────────
+  (async () => {
+    const user = requireAuth("consumer");
+    if (!user) return;
+    setNavUser(user);
+    const initials = (user.username || "?")[0].toUpperCase();
+    document.getElementById("user-avatar-initials").textContent = initials;
+    setupStars();
+    await loadPhotos(true);
+  })();
 
-    // ── Load / Search / Filter ────────────────────────────────────────────
-    function handleSearch(e) {
-      e.preventDefault();
-      activeSearch = document.getElementById("search-input").value.trim();
-      applyFilters();
+  // ── Search / Filter ───────────────────────────────────────────────────────
+  function applySearch() {
+    activeSearch = document.getElementById("search-input").value.trim();
+    document.getElementById("clear-search-btn").style.display = activeSearch ? "" : "none";
+    applyFilters();
+  }
+
+  function clearSearch() {
+    document.getElementById("search-input").value = "";
+    activeSearch = "";
+    document.getElementById("clear-search-btn").style.display = "none";
+    applyFilters();
+  }
+
+  function applyFilters() {
+    activeSort = document.getElementById("sort-select").value;
+    activeTag  = document.getElementById("tag-select").value;
+    loadPhotos(true);
+  }
+
+  // ── Load Photos ───────────────────────────────────────────────────────────
+  async function loadPhotos(reset) {
+    if (reset) {
+      currentPage = 1;
+      document.getElementById("photos-grid").innerHTML =
+        '<div class="placeholder"><span class="spinner"></span><p>Loading…</p></div>';
     }
-
-    function applyFilters() {
-      activeSort = document.getElementById("sort-select").value;
-      activeTag  = document.getElementById("tag-select").value;
-      loadPhotos(true);
-    }
-
-    async function loadPhotos(reset) {
-      if (reset) {
-        currentPage = 1;
-        document.getElementById("photos-grid").innerHTML =
-          '<p class="placeholder"><span class="spinner"></span></p>';
-      }
-
-      try {
-        console.log("[PhotoShare] calling listPhotos page=%d", currentPage);
-        const data = await listPhotos({
-          search: activeSearch,
-          sort:   activeSort,
-          tag:    activeTag,
-          page:   currentPage,
-          limit:  PAGE_SIZE,
-        });
-
-        console.log("[PhotoShare] listPhotos response:", data);
-
-        if (!data || !data.photos) {
-          document.getElementById("photos-grid").innerHTML =
-            '<p class="placeholder">Unexpected response from server.</p>';
-          return;
-        }
-
-        const grid = document.getElementById("photos-grid");
-        if (reset) grid.innerHTML = "";
-
-        if (!data.photos.length && reset) {
-          grid.innerHTML = '<p class="placeholder">No photos yet — check back soon!</p>';
-          document.getElementById("load-more-btn").classList.add("hidden");
-          return;
-        }
-
-        data.photos.forEach(p => {
-          (p.aiTags || []).forEach(t => knownTags.add(t));
-          grid.appendChild(makeCard(p));
-        });
-
-        populateTagFilter();
-
-        const moreBtn = document.getElementById("load-more-btn");
-        moreBtn.classList.toggle("hidden", data.photos.length < PAGE_SIZE);
-      } catch (err) {
-        console.error("[PhotoShare] loadPhotos error:", err);
-        document.getElementById("photos-grid").innerHTML =
-          `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
-      }
-    }
-
-    function loadMore() {
-      currentPage++;
-      loadPhotos(false);
-    }
-
-    function populateTagFilter() {
-      const sel = document.getElementById("tag-select");
-      const current = sel.value;
-      sel.innerHTML = '<option value="">All tags</option>';
-      [...knownTags].sort().forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t;
-        opt.textContent = t;
-        if (t === current) opt.selected = true;
-        sel.appendChild(opt);
+    try {
+      const data = await listPhotos({
+        search: activeSearch, sort: activeSort,
+        tag: activeTag, page: currentPage, limit: PAGE_SIZE,
       });
-    }
 
-    // ── Card builder ─────────────────────────────────────────────────────
-    function makeCard(photo) {
-      const card = document.createElement("div");
-      card.className = "photo-card";
-      card.onclick = () => openModal(photo.id);
-
-      const stars = photo.avgRating
-        ? "&#9733;".repeat(Math.round(photo.avgRating)) + ` ${photo.avgRating.toFixed(1)}`
-        : "No ratings";
-
-      const tagsHtml = (photo.aiTags || []).slice(0, 3)
-        .map(t => `<span class="ai-tag">${t}</span>`).join("");
-
-      card.innerHTML = `
-        <div class="photo-card-thumb">
-          <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
-        </div>
-        <div class="photo-card-body">
-          <div class="photo-card-title">${escHtml(photo.title)}</div>
-          ${photo.location ? `<div class="photo-card-meta">📍 ${escHtml(photo.location)}</div>` : ""}
-          <div class="photo-card-rating"><span class="star-filled">★</span>${stars}</div>
-          ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
-        </div>`;
-      return card;
-    }
-
-    // ── Modal ─────────────────────────────────────────────────────────────
-    async function openModal(photoId) {
-      openPhotoId = photoId;
-      const overlay = document.getElementById("modal-overlay");
-      overlay.classList.remove("hidden");
-      document.body.style.overflow = "hidden";
-
-      // Reset
-      document.getElementById("modal-img").src = "";
-      document.getElementById("modal-title").textContent = "Loading…";
-      document.getElementById("modal-caption").textContent = "";
-      document.getElementById("modal-meta").innerHTML = "";
-      document.getElementById("modal-ai-tags").innerHTML = "";
-      document.getElementById("comments-list").innerHTML = "";
-      document.getElementById("rating-summary").textContent = "";
-      document.getElementById("comment-error").textContent = "";
-      resetStars(null);
-
-      try {
-        const photo = await getPhoto(photoId);
-        renderModal(photo);
-      } catch (err) {
-        document.getElementById("modal-title").textContent = `Error: ${err.message}`;
-      }
-    }
-
-    function renderModal(photo) {
-      document.getElementById("modal-img").src = photo.imageUrl;
-      document.getElementById("modal-img").alt = photo.title;
-      document.getElementById("modal-title").textContent = photo.title;
-      document.getElementById("modal-caption").textContent = photo.caption || "";
-
-      // Meta
-      const meta = [];
-      if (photo.location) meta.push(`<span>📍 ${escHtml(photo.location)}</span>`);
-      if (photo.people?.length) meta.push(`<span>👥 ${photo.people.map(escHtml).join(", ")}</span>`);
-      if (photo.uploaderName) meta.push(`<span>📷 ${escHtml(photo.uploaderName)}</span>`);
-      if (photo.createdAt) meta.push(`<span>🗓 ${new Date(photo.createdAt).toLocaleDateString()}</span>`);
-      document.getElementById("modal-meta").innerHTML = meta.join("");
-
-      // AI Tags
-      const tagsContainer = document.getElementById("modal-ai-tags");
-      if (photo.aiTags?.length) {
-        tagsContainer.innerHTML = photo.aiTags
-          .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
-      }
-
-      // Rating
-      const summary = photo.avgRating
-        ? `Avg ${photo.avgRating.toFixed(1)} / 5 (${photo.ratingCount} rating${photo.ratingCount !== 1 ? "s" : ""})`
-        : "No ratings yet";
-      document.getElementById("rating-summary").textContent = summary;
-      if (photo.ownRating) resetStars(photo.ownRating);
-
-      // Comments
-      renderComments(photo.comments || []);
-    }
-
-    function renderComments(comments) {
-      const list = document.getElementById("comments-list");
-      if (!comments.length) {
-        list.innerHTML = '<p class="no-content">No comments yet. Be the first!</p>';
+      if (!data || !data.photos) {
+        document.getElementById("photos-grid").innerHTML =
+          '<div class="placeholder"><div class="placeholder-icon">&#9888;</div><h3>Unexpected response</h3></div>';
         return;
       }
-      list.innerHTML = comments.map(c => `
-        <div class="comment-item">
-          <div class="comment-author">${escHtml(c.authorName || c.authorEmail)}</div>
-          <div>${escHtml(c.text)}</div>
-        </div>`).join("");
-      list.scrollTop = list.scrollHeight;
-    }
 
-    function closeModal() {
-      document.getElementById("modal-overlay").classList.add("hidden");
-      document.body.style.overflow = "";
-      openPhotoId = null;
-    }
+      const grid = document.getElementById("photos-grid");
+      if (reset) grid.innerHTML = "";
 
-    function handleOverlayClick(e) {
-      if (e.target.id === "modal-overlay") closeModal();
-    }
-
-    // ── Comment submit ────────────────────────────────────────────────────
-    async function submitComment(e) {
-      e.preventDefault();
-      const text = document.getElementById("comment-text").value.trim();
-      const errEl = document.getElementById("comment-error");
-      errEl.textContent = "";
-      if (!text || !openPhotoId) return;
-
-      try {
-        await addComment(openPhotoId, text);
-        document.getElementById("comment-text").value = "";
-        // Refresh comments
-        const photo = await getPhoto(openPhotoId);
-        renderComments(photo.comments || []);
-      } catch (err) {
-        errEl.textContent = err.message;
+      if (!data.photos.length && reset) {
+        grid.innerHTML = `
+          <div class="placeholder">
+            <div class="placeholder-icon">&#128247;</div>
+            <h3>No photos found</h3>
+            <p>${activeSearch ? `No results for "${escHtml(activeSearch)}"` : "Check back soon!"}</p>
+          </div>`;
+        document.getElementById("load-more-btn").classList.add("hidden");
+        document.getElementById("result-count").textContent = "";
+        return;
       }
-    }
 
-    // ── Star Rating ───────────────────────────────────────────────────────
-    function setupStars() {
-      const stars = document.querySelectorAll("#star-input .star");
-      stars.forEach(star => {
-        star.addEventListener("mouseover", () => highlightStars(+star.dataset.v));
-        star.addEventListener("mouseout",  () => resetStars(null));
-        star.addEventListener("click",     () => submitRating(+star.dataset.v));
+      data.photos.forEach(p => {
+        (p.aiTags || []).forEach(t => knownTags.add(t));
+        grid.appendChild(makeCard(p));
       });
-    }
 
-    function highlightStars(upTo) {
-      document.querySelectorAll("#star-input .star").forEach(s => {
-        s.classList.toggle("lit", +s.dataset.v <= upTo);
-      });
-    }
+      populateTagFilter();
 
-    function resetStars(selected) {
-      document.querySelectorAll("#star-input .star").forEach(s => {
-        s.classList.toggle("lit", selected !== null && +s.dataset.v <= selected);
-      });
-    }
+      const total = data.total || 0;
+      document.getElementById("result-count").textContent = total
+        ? `${total} photo${total !== 1 ? "s" : ""}` : "";
 
-    async function submitRating(value) {
-      if (!openPhotoId) return;
-      try {
-        const result = await ratePhoto(openPhotoId, value);
-        resetStars(value);
-        const summary = `Avg ${result.avgRating.toFixed(1)} / 5 (${result.ratingCount} rating${result.ratingCount !== 1 ? "s" : ""})`;
-        document.getElementById("rating-summary").textContent = summary;
-      } catch (err) {
-        document.getElementById("comment-error").textContent = `Rating failed: ${err.message}`;
-      }
+      document.getElementById("load-more-btn")
+        .classList.toggle("hidden", data.photos.length < PAGE_SIZE);
+    } catch (err) {
+      document.getElementById("photos-grid").innerHTML =
+        `<div class="placeholder"><div class="placeholder-icon">&#9888;</div><h3>Could not load photos</h3><p>${escHtml(err.message)}</p></div>`;
     }
+  }
 
-    // ── Util ──────────────────────────────────────────────────────────────
-    function escHtml(str) {
-      return String(str ?? "")
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  function loadMore() { currentPage++; loadPhotos(false); }
+
+  function populateTagFilter() {
+    const sel = document.getElementById("tag-select");
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Tags</option>';
+    [...knownTags].sort().forEach(t => {
+      const o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      if (t === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  // ── Card ──────────────────────────────────────────────────────────────────
+  function makeCard(photo) {
+    const card = document.createElement("div");
+    card.className = "photo-card";
+    card.onclick = () => openModal(photo.id);
+
+    const stars = photo.avgRating
+      ? `<span class="star-filled">&#9733;</span> ${photo.avgRating.toFixed(1)}`
+      : "&#9733; —";
+
+    const tagsHtml = (photo.aiTags || []).slice(0, 3)
+      .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
+
+    card.innerHTML = `
+      <div class="photo-card-thumb">
+        <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+      </div>
+      <div class="photo-card-body">
+        <div class="photo-card-title">${escHtml(photo.title)}</div>
+        ${photo.location ? `<div class="photo-card-meta">&#128205; ${escHtml(photo.location)}</div>` : ""}
+        <div class="photo-card-rating">${stars}</div>
+        ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
+      </div>`;
+    return card;
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+  async function openModal(photoId) {
+    openPhotoId = photoId;
+    document.getElementById("modal-overlay").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+
+    document.getElementById("modal-img").src = "";
+    document.getElementById("modal-title").textContent = "Loading…";
+    document.getElementById("modal-caption").textContent = "";
+    document.getElementById("modal-meta").innerHTML = "";
+    document.getElementById("modal-ai-tags").innerHTML = "";
+    document.getElementById("comments-list").innerHTML = "<p class='no-content'>Loading…</p>";
+    document.getElementById("rating-summary").textContent = "";
+    document.getElementById("comment-error").textContent = "";
+    resetStars(null);
+
+    try {
+      const photo = await getPhoto(photoId);
+      renderModal(photo);
+    } catch (err) {
+      document.getElementById("modal-title").textContent = "Failed to load photo.";
     }
-  </script>
+  }
+
+  function renderModal(photo) {
+    document.getElementById("modal-img").src = photo.imageUrl;
+    document.getElementById("modal-img").alt = photo.title;
+    document.getElementById("modal-title").textContent = photo.title;
+    document.getElementById("modal-caption").textContent = photo.caption || "";
+
+    const meta = [];
+    if (photo.location) meta.push(`<div class="modal-meta-row">&#128205; ${escHtml(photo.location)}</div>`);
+    if (photo.people?.length) meta.push(`<div class="modal-meta-row">&#128100; ${photo.people.map(escHtml).join(", ")}</div>`);
+    if (photo.uploaderName) meta.push(`<div class="modal-meta-row">&#128247; ${escHtml(photo.uploaderName)}</div>`);
+    if (photo.createdAt) meta.push(`<div class="modal-meta-row">&#128197; ${new Date(photo.createdAt).toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"})}</div>`);
+    document.getElementById("modal-meta").innerHTML = meta.join("");
+
+    const tagsContainer = document.getElementById("modal-ai-tags");
+    tagsContainer.innerHTML = (photo.aiTags || []).length
+      ? photo.aiTags.map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("") : "";
+
+    const summary = photo.avgRating
+      ? `${photo.avgRating.toFixed(1)} / 5 &nbsp;(${photo.ratingCount} rating${photo.ratingCount !== 1 ? "s" : ""})`
+      : "No ratings yet";
+    document.getElementById("rating-summary").innerHTML = summary;
+    if (photo.ownRating) resetStars(photo.ownRating);
+
+    renderComments(photo.comments || []);
+  }
+
+  function renderComments(comments) {
+    const list = document.getElementById("comments-list");
+    if (!comments.length) {
+      list.innerHTML = "<p class='no-content'>No comments yet. Be the first!</p>";
+      return;
+    }
+    list.innerHTML = comments.map(c => `
+      <div class="comment-item">
+        <div class="comment-author">${escHtml(c.authorName || "User")}</div>
+        <div>${escHtml(c.text)}</div>
+      </div>`).join("");
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function closeModal() {
+    document.getElementById("modal-overlay").classList.add("hidden");
+    document.body.style.overflow = "";
+    openPhotoId = null;
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target.id === "modal-overlay") closeModal();
+  }
+
+  // ── Comment submit ─────────────────────────────────────────────────────────
+  async function submitComment(e) {
+    e.preventDefault();
+    const text  = document.getElementById("comment-text").value.trim();
+    const errEl = document.getElementById("comment-error");
+    errEl.textContent = "";
+    if (!text || !openPhotoId) return;
+    try {
+      await addComment(openPhotoId, text);
+      document.getElementById("comment-text").value = "";
+      const photo = await getPhoto(openPhotoId);
+      renderComments(photo.comments || []);
+    } catch (err) {
+      errEl.textContent = err.message;
+    }
+  }
+
+  // ── Stars ──────────────────────────────────────────────────────────────────
+  function setupStars() {
+    document.querySelectorAll("#star-input .star").forEach(star => {
+      star.addEventListener("mouseover", () => highlightStars(+star.dataset.v));
+      star.addEventListener("mouseout",  () => resetStars(null));
+      star.addEventListener("click",     () => submitRating(+star.dataset.v));
+    });
+  }
+
+  function highlightStars(upTo) {
+    document.querySelectorAll("#star-input .star").forEach(s => {
+      s.classList.toggle("lit", +s.dataset.v <= upTo);
+    });
+  }
+
+  function resetStars(selected) {
+    document.querySelectorAll("#star-input .star").forEach(s => {
+      s.classList.toggle("lit", selected !== null && +s.dataset.v <= selected);
+    });
+  }
+
+  async function submitRating(value) {
+    if (!openPhotoId) return;
+    try {
+      const result = await ratePhoto(openPhotoId, value);
+      resetStars(value);
+      document.getElementById("rating-summary").innerHTML =
+        `${result.avgRating.toFixed(1)} / 5 &nbsp;(${result.ratingCount} rating${result.ratingCount !== 1 ? "s" : ""})`;
+    } catch (err) {
+      document.getElementById("comment-error").textContent = `Rating failed: ${err.message}`;
+    }
+  }
+
+  // ── Util ───────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+</script>
 </body>
 </html>

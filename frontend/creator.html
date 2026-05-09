@@ -8,236 +8,241 @@
 </head>
 <body>
 
-  <!-- ── Navbar ─────────────────────────────────────────────────────────── -->
-  <nav class="navbar">
-    <div class="navbar-brand">
-      PhotoShare
-      <span class="role-badge creator">Creator</span>
-    </div>
-    <div class="navbar-right">
-      <span class="nav-user" id="nav-username"></span>
-      <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
-    </div>
-  </nav>
-
-  <!-- ── Main layout ────────────────────────────────────────────────────── -->
-  <div class="creator-layout">
-
-    <!-- Upload Panel -->
-    <aside>
-      <div class="card upload-panel">
-        <h2>Upload Photo</h2>
-        <form class="upload-form" id="upload-form" onsubmit="handleUpload(event)">
-
-          <div class="form-group">
-            <div class="file-drop-zone" id="drop-zone">
-              <input type="file" id="photo-file" accept="image/jpeg,image/png,image/gif,image/webp"
-                     onchange="handleFileChange(event)" />
-              <div class="file-drop-label">Click or drag a photo here</div>
-              <div class="file-drop-sub">JPEG, PNG, GIF, WebP · max 10 MB</div>
-            </div>
-            <img id="upload-preview" class="hidden" alt="Preview" />
-          </div>
-
-          <div class="form-group">
-            <label for="photo-title">Title *</label>
-            <input type="text" id="photo-title" placeholder="Give your photo a title"
-                   maxlength="100" required />
-          </div>
-
-          <div class="form-group">
-            <label for="photo-caption">Caption</label>
-            <textarea id="photo-caption" placeholder="Tell the story behind this photo…"
-                      maxlength="500" rows="3"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="photo-location">Location</label>
-            <input type="text" id="photo-location" placeholder="e.g. Belfast, UK"
-                   maxlength="100" />
-          </div>
-
-          <div class="form-group">
-            <label for="photo-people">People tagged</label>
-            <input type="text" id="photo-people" placeholder="Alice, Bob, Carol"
-                   maxlength="200" />
-          </div>
-
-          <button type="submit" class="btn btn-primary" id="upload-btn">
-            Upload Photo
-          </button>
-
-          <p class="error-text"  id="upload-error"></p>
-          <p class="success-text" id="upload-success"></p>
-        </form>
-      </div>
-    </aside>
-
-    <!-- My Photos -->
-    <section>
-      <h2 style="padding: 0 4px 16px; font-size:1.1rem; font-weight:700;">My Photos</h2>
-      <div class="photo-grid" id="my-photos-grid">
-        <p class="placeholder"><span class="spinner"></span></p>
-      </div>
-    </section>
-
+<!-- ── Navbar ───────────────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="7" fill="#2563EB"/>
+      <path d="M6 20l5-6 4 5 3-3 4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="19" cy="10" r="2" fill="#fff"/>
+    </svg>
+    PhotoShare
   </div>
+  <div class="navbar-spacer"></div>
+  <div class="navbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar-initials">?</div>
+      <span id="nav-username">…</span>
+      <span class="role-pill creator">Creator</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+  </div>
+</nav>
 
-  <script src="/shared/auth.js"></script>
-  <script src="/shared/api.js"></script>
-  <script>
-    // ── Boot ──────────────────────────────────────────────────────────────
-    (async function () {
-      console.log("[PhotoShare] creator.html booting");
-      const user = requireAuth("creator");
-      console.log("[PhotoShare] requireAuth result:", user);
-      if (!user) return;
-      setNavUser(user);
-      await refreshMyPhotos();
-    })();
+<!-- ── Page body ─────────────────────────────────────────────────────────── -->
+<div class="creator-layout">
 
-    // ── File preview ──────────────────────────────────────────────────────
-    function handleFileChange(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const preview = document.getElementById("upload-preview");
-      preview.src = URL.createObjectURL(file);
-      preview.classList.remove("hidden");
-    }
+  <!-- Upload panel -->
+  <aside>
+    <div class="panel upload-panel">
+      <div class="panel-title">&#128247; Upload Photo</div>
 
-    // ── Upload ────────────────────────────────────────────────────────────
-    async function handleUpload(e) {
-      e.preventDefault();
+      <form class="upload-form" id="upload-form" onsubmit="handleUpload(event)">
 
-      const errEl  = document.getElementById("upload-error");
-      const okEl   = document.getElementById("upload-success");
-      const btn    = document.getElementById("upload-btn");
-      errEl.textContent = "";
-      okEl.textContent  = "";
-
-      const file = document.getElementById("photo-file").files[0];
-      if (!file) { errEl.textContent = "Please select a photo."; return; }
-      if (file.size > 10 * 1024 * 1024) { errEl.textContent = "File must be under 10 MB."; return; }
-
-      const title = document.getElementById("photo-title").value.trim();
-      if (!title) { errEl.textContent = "Title is required."; return; }
-
-      const caption  = document.getElementById("photo-caption").value.trim();
-      const location = document.getElementById("photo-location").value.trim();
-      const people   = document.getElementById("photo-people").value.trim();
-
-      const formData = new FormData();
-      formData.append("photo", file);
-      formData.append("title", title);
-      formData.append("caption", caption);
-      formData.append("location", location);
-      formData.append("people", people);
-
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span> Uploading…';
-
-      try {
-        console.log("[PhotoShare] uploading photo:", title);
-        const result = await uploadPhoto(formData);
-        console.log("[PhotoShare] upload response:", result);
-
-        if (!result) {
-          errEl.textContent = "Upload failed — no response from server.";
-          return;
-        }
-
-        okEl.textContent = `"${result.title}" uploaded successfully!`;
-        if (result.aiTags?.length) {
-          okEl.textContent += ` AI tags: ${result.aiTags.join(", ")}.`;
-        }
-        document.getElementById("upload-form").reset();
-        document.getElementById("upload-preview").classList.add("hidden");
-        await refreshMyPhotos();
-      } catch (err) {
-        console.error("[PhotoShare] upload error:", err);
-        errEl.textContent = err.message;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Upload Photo";
-      }
-    }
-
-    // ── My Photos grid ────────────────────────────────────────────────────
-    async function refreshMyPhotos() {
-      const grid = document.getElementById("my-photos-grid");
-      grid.innerHTML = '<p class="placeholder"><span class="spinner"></span></p>';
-
-      try {
-        console.log("[PhotoShare] calling getMyPhotos");
-        const data = await getMyPhotos();
-        console.log("[PhotoShare] getMyPhotos response:", data);
-
-        if (!data || !data.photos) {
-          grid.innerHTML = '<p class="placeholder">Unexpected response from server.</p>';
-          return;
-        }
-
-        grid.innerHTML = "";
-
-        if (!data.photos.length) {
-          grid.innerHTML = '<p class="placeholder">No photos yet — upload your first one!</p>';
-          return;
-        }
-
-        data.photos.forEach(p => grid.appendChild(makeCreatorCard(p)));
-      } catch (err) {
-        console.error("[PhotoShare] refreshMyPhotos error:", err);
-        grid.innerHTML = `<p class="placeholder">Failed to load photos: ${err.message}</p>`;
-      }
-    }
-
-    function makeCreatorCard(photo) {
-      const card = document.createElement("div");
-      card.className = "photo-card creator-card";
-      card.dataset.id = photo.id;
-
-      const stars = photo.avgRating
-        ? `★ ${photo.avgRating.toFixed(1)}`
-        : "No ratings";
-
-      const tagsHtml = (photo.aiTags || []).slice(0, 3)
-        .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
-
-      card.innerHTML = `
-        <div class="photo-card-thumb">
-          <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+        <div class="form-group">
+          <div class="drop-zone" id="drop-zone">
+            <input type="file" id="photo-file" accept="image/jpeg,image/png,image/gif,image/webp"
+                   onchange="handleFileChange(event)" />
+            <div class="drop-icon">&#128444;</div>
+            <div class="drop-label">Click or drag to upload</div>
+            <div class="drop-sub">JPEG, PNG, GIF, WebP &nbsp;&middot;&nbsp; max 10 MB</div>
+          </div>
+          <img id="upload-preview" class="upload-preview hidden" alt="Preview" />
         </div>
-        <button class="delete-btn" onclick="handleDelete(event, '${photo.id}')">Delete</button>
-        <div class="photo-card-body">
-          <div class="photo-card-title">${escHtml(photo.title)}</div>
-          ${photo.location ? `<div class="photo-card-meta">📍 ${escHtml(photo.location)}</div>` : ""}
-          <div class="photo-card-rating"><span class="star-filled">★</span>${escHtml(stars)}</div>
-          ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
-        </div>`;
-      return card;
-    }
 
-    async function handleDelete(e, photoId) {
-      e.stopPropagation();
-      if (!confirm("Delete this photo? This cannot be undone.")) return;
-      try {
-        await deletePhoto(photoId);
-        document.querySelector(`[data-id="${photoId}"]`)?.remove();
-        const grid = document.getElementById("my-photos-grid");
-        if (!grid.querySelector(".photo-card")) {
-          grid.innerHTML = '<p class="placeholder">No photos yet — upload your first one!</p>';
-        }
-      } catch (err) {
-        alert(`Delete failed: ${err.message}`);
+        <div class="form-group">
+          <label class="form-label" for="photo-title">Title <span style="color:var(--red)">*</span></label>
+          <input class="form-control" type="text" id="photo-title"
+                 placeholder="Give your photo a title" maxlength="100" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="photo-caption">Caption</label>
+          <textarea class="form-control" id="photo-caption"
+                    placeholder="Tell the story behind this photo…" maxlength="500" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="photo-location">Location</label>
+          <input class="form-control" type="text" id="photo-location"
+                 placeholder="e.g. Belfast, UK" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="photo-people">People Tagged</label>
+          <input class="form-control" type="text" id="photo-people"
+                 placeholder="Alice, Bob, Carol (comma-separated)" maxlength="200" />
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="upload-btn" style="width:100%">
+          Upload Photo
+        </button>
+
+        <p class="error-text"   id="upload-error"></p>
+        <p class="success-text" id="upload-success"></p>
+      </form>
+    </div>
+  </aside>
+
+  <!-- My Photos -->
+  <section>
+    <div class="panel" style="padding:20px 24px;margin-bottom:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div class="section-heading">My Photos</div>
+        <span id="my-photo-count" style="font-size:0.8rem;color:var(--text-3);font-weight:500;"></span>
+      </div>
+      <div class="photo-grid" id="my-photos-grid" style="padding:0;gap:16px;">
+        <div class="placeholder"><span class="spinner"></span><p>Loading…</p></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script src="/shared/auth.js"></script>
+<script src="/shared/api.js"></script>
+<script>
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  (async () => {
+    const user = requireAuth("creator");
+    if (!user) return;
+    setNavUser(user);
+    const initials = (user.username || "?")[0].toUpperCase();
+    document.getElementById("user-avatar-initials").textContent = initials;
+    await refreshMyPhotos();
+  })();
+
+  // ── File preview ───────────────────────────────────────────────────────────
+  function handleFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const preview = document.getElementById("upload-preview");
+    preview.src = URL.createObjectURL(file);
+    preview.classList.remove("hidden");
+    const dz = document.getElementById("drop-zone");
+    dz.style.borderColor = "var(--blue)";
+    dz.style.background  = "var(--blue-light)";
+  }
+
+  // ── Upload ─────────────────────────────────────────────────────────────────
+  async function handleUpload(e) {
+    e.preventDefault();
+    const errEl  = document.getElementById("upload-error");
+    const okEl   = document.getElementById("upload-success");
+    const btn    = document.getElementById("upload-btn");
+    errEl.textContent = "";
+    okEl.textContent  = "";
+
+    const file = document.getElementById("photo-file").files[0];
+    if (!file) { errEl.textContent = "Please select a photo."; return; }
+    if (file.size > 10 * 1024 * 1024) { errEl.textContent = "File must be under 10 MB."; return; }
+
+    const title = document.getElementById("photo-title").value.trim();
+    if (!title) { errEl.textContent = "Title is required."; return; }
+
+    const formData = new FormData();
+    formData.append("photo",     file);
+    formData.append("title",     title);
+    formData.append("caption",   document.getElementById("photo-caption").value.trim());
+    formData.append("location",  document.getElementById("photo-location").value.trim());
+    formData.append("people",    document.getElementById("photo-people").value.trim());
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Uploading…';
+
+    try {
+      const result = await uploadPhoto(formData);
+      if (!result) { errEl.textContent = "Upload failed — no response from server."; return; }
+
+      okEl.textContent = `"${result.title}" uploaded successfully!`;
+      if (result.aiTags?.length) {
+        okEl.textContent += ` AI tags: ${result.aiTags.join(", ")}.`;
       }
+      document.getElementById("upload-form").reset();
+      document.getElementById("upload-preview").classList.add("hidden");
+      const dz = document.getElementById("drop-zone");
+      dz.style.borderColor = "";
+      dz.style.background  = "";
+      await refreshMyPhotos();
+    } catch (err) {
+      errEl.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Upload Photo";
     }
+  }
 
-    // ── Util ──────────────────────────────────────────────────────────────
-    function escHtml(str) {
-      return String(str ?? "")
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  // ── My Photos ──────────────────────────────────────────────────────────────
+  async function refreshMyPhotos() {
+    const grid = document.getElementById("my-photos-grid");
+    grid.innerHTML = '<div class="placeholder"><span class="spinner"></span><p>Loading…</p></div>';
+    try {
+      const data = await getMyPhotos();
+      if (!data || !data.photos) {
+        grid.innerHTML = '<div class="placeholder"><p>Could not load photos.</p></div>';
+        return;
+      }
+      document.getElementById("my-photo-count").textContent =
+        data.photos.length ? `${data.photos.length} photo${data.photos.length !== 1 ? "s" : ""}` : "";
+
+      grid.innerHTML = "";
+      if (!data.photos.length) {
+        grid.innerHTML = '<div class="placeholder"><div class="placeholder-icon">&#128247;</div><h3>No photos yet</h3><p>Upload your first photo using the form.</p></div>';
+        return;
+      }
+      data.photos.forEach(p => grid.appendChild(makeCreatorCard(p)));
+    } catch (err) {
+      grid.innerHTML = `<div class="placeholder"><div class="placeholder-icon">&#9888;</div><h3>Failed to load</h3><p>${escHtml(err.message)}</p></div>`;
     }
-  </script>
+  }
+
+  function makeCreatorCard(photo) {
+    const card = document.createElement("div");
+    card.className = "photo-card creator-card";
+    card.dataset.id = photo.id;
+
+    const stars = photo.avgRating ? `&#9733; ${photo.avgRating.toFixed(1)}` : "&#9733; —";
+    const tagsHtml = (photo.aiTags || []).slice(0, 3)
+      .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
+
+    card.innerHTML = `
+      <div class="photo-card-thumb">
+        <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+      </div>
+      <button class="delete-btn" onclick="handleDelete(event,'${photo.id}')">Delete</button>
+      <div class="photo-card-body">
+        <div class="photo-card-title">${escHtml(photo.title)}</div>
+        ${photo.location ? `<div class="photo-card-meta">&#128205; ${escHtml(photo.location)}</div>` : ""}
+        <div class="photo-card-rating"><span class="star-filled">&#9733;</span> ${photo.avgRating ? photo.avgRating.toFixed(1) : "—"}</div>
+        ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
+      </div>`;
+    return card;
+  }
+
+  async function handleDelete(e, photoId) {
+    e.stopPropagation();
+    if (!confirm("Delete this photo? This cannot be undone.")) return;
+    try {
+      await deletePhoto(photoId);
+      document.querySelector(`[data-id="${photoId}"]`)?.remove();
+      const grid = document.getElementById("my-photos-grid");
+      const remaining = grid.querySelectorAll(".photo-card").length;
+      document.getElementById("my-photo-count").textContent =
+        remaining ? `${remaining} photo${remaining !== 1 ? "s" : ""}` : "";
+      if (!remaining) {
+        grid.innerHTML = '<div class="placeholder"><div class="placeholder-icon">&#128247;</div><h3>No photos yet</h3><p>Upload your first photo using the form.</p></div>';
+      }
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    }
+  }
+
+  // ── Util ───────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+</script>
 </body>
 </html>
