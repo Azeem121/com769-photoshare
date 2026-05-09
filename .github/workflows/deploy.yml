@@ -1,10 +1,15 @@
-# Backend deployed manually via VS Code
-# Frontend deployed manually via Azure Static Web Apps portal
+# CI/CD Pipeline — PhotoShare (COM769)
 #
-# This workflow runs CI only (lint + tests).
-# Live backend: https://photoshareapi-cpechycedwbecjae.francecentral-01.azurewebsites.net
+# On every push to main:
+#   1. Lint & unit-test the backend
+#   2. Validate frontend files
+#   3. Deploy backend to Azure Functions (Flex Consumption)
+#   4. Deploy frontend to Azure Blob Storage static website
+#
+# Live backend:  https://photoshareapi-cpechycedwbecjae.francecentral-01.azurewebsites.net
+# Live frontend: https://photosharestorage.z28.web.core.windows.net/
 
-name: CI — Lint & Test
+name: CI/CD — PhotoShare
 
 on:
   push:
@@ -16,10 +21,14 @@ env:
   PYTHON_VERSION: "3.11"
   BACKEND_PATH: "backend"
 
+permissions:
+  id-token: write   # required for OIDC login to Azure
+  contents: read
+
 jobs:
-  # ───────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
   # Job 1 — Lint & unit-test the backend
-  # ───────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
@@ -61,9 +70,9 @@ jobs:
           cd ${{ env.BACKEND_PATH }}
           python -m pytest tests/ -v --tb=short
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # Job 2 — Validate frontend files exist
-  # ───────────────────────────────────────────────────────────────────────────
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 2 — Validate frontend files
+  # ─────────────────────────────────────────────────────────────────────────────
   validate-frontend:
     name: Validate Frontend
     runs-on: ubuntu-latest
@@ -82,23 +91,90 @@ jobs:
           test -f frontend/staticwebapp.config.json && echo "✓ staticwebapp.config.json"
           echo "All frontend files present."
 
-  # ───────────────────────────────────────────────────────────────────────────
-  # Job 3 — Deployment notice (no actual deployment — done manually)
-  # ───────────────────────────────────────────────────────────────────────────
-  deployment-info:
-    name: Deployment Info
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 3 — Deploy backend to Azure Functions (main branch only)
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend
     runs-on: ubuntu-latest
     needs: [test-backend, validate-frontend]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Deployment is manual
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install backend dependencies locally (for zip)
         run: |
-          echo "=============================================="
-          echo " CI passed. Deployment is done manually."
-          echo "=============================================="
-          echo ""
-          echo " Backend  → VS Code Azure Functions extension"
-          echo " Live URL → https://photoshareapi-cpechycedwbecjae.francecentral-01.azurewebsites.net"
-          echo ""
-          echo " Frontend → Azure Static Web Apps portal"
-          echo "=============================================="
+          cd ${{ env.BACKEND_PATH }}
+          pip install --upgrade pip
+          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+
+      - name: Package backend as zip
+        run: |
+          cd ${{ env.BACKEND_PATH }}
+          zip -r ../backend.zip . \
+            --exclude "*.pyc" \
+            --exclude "__pycache__/*" \
+            --exclude "tests/*" \
+            --exclude "local.settings.json"
+
+      - name: Login to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0800043853F24FD289ED94F4D54405A2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D0BB69726C684C95892A49DAE845BD7D }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_77739247B20A4FE7BCF48E81AECD0DD7 }}
+
+      - name: Deploy to Azure Functions
+        run: |
+          az functionapp deploy \
+            --name photoshareapi \
+            --resource-group Azure_Functions \
+            --src-path backend.zip \
+            --type zip
+
+      - name: Verify deployment (health check)
+        run: |
+          sleep 30
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://photoshareapi-cpechycedwbecjae.francecentral-01.azurewebsites.net/api/health)
+          echo "Health check HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "Backend deployment verified!" || exit 1
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Job 4 — Deploy frontend to Azure Blob Storage static website
+  # ─────────────────────────────────────────────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [test-backend, validate-frontend]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_0800043853F24FD289ED94F4D54405A2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D0BB69726C684C95892A49DAE845BD7D }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_77739247B20A4FE7BCF48E81AECD0DD7 }}
+
+      - name: Deploy frontend to Azure Blob Storage
+        run: |
+          az storage blob upload-batch \
+            --account-name photosharestorage \
+            --destination '$web' \
+            --source frontend/ \
+            --overwrite \
+            --connection-string "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+
+      - name: Verify frontend deployment
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://photosharestorage.z28.web.core.windows.net/)
+          echo "Frontend HTTP status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "Frontend deployment verified!" || exit 1

@@ -35,12 +35,17 @@ def generate_token() -> str:
     return secrets.token_hex(32)
 
 
-def make_response(body: dict, status_code: int = 200) -> func.HttpResponse:
+def make_response(body: dict, status_code: int = 200, cache_seconds: int = 0) -> func.HttpResponse:
+    headers = dict(CORS_HEADERS)
+    if cache_seconds > 0:
+        headers["Cache-Control"] = f"public, max-age={cache_seconds}, s-maxage={cache_seconds}"
+    else:
+        headers["Cache-Control"] = "no-store"
     return func.HttpResponse(
         json.dumps(body),
         status_code=status_code,
         mimetype="application/json",
-        headers=CORS_HEADERS,
+        headers=headers,
     )
 
 

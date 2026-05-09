@@ -86,4 +86,4 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         "total": total,
         "page": page,
         "limit": limit,
-    })
+    }, cache_seconds=30)
