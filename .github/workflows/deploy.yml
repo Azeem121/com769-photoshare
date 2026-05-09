@@ -131,11 +131,11 @@ jobs:
 
       - name: Deploy to Azure Functions
         run: |
-          az functionapp deploy \
+          az functionapp deployment source config-zip \
             --name photoshareapi \
             --resource-group Azure_Functions \
-            --src-path backend.zip \
-            --type zip
+            --src backend.zip \
+            --build-remote true
 
       - name: Verify deployment (health check)
         run: |
