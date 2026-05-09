@@ -4,70 +4,137 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PhotoShare — Sign In</title>
-  <link rel="stylesheet" href="/shared/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .spinner { display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px; }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    .pattern-bg { background-image:radial-gradient(rgba(255,255,255,0.08) 1.5px,transparent 1.5px); background-size:28px 28px; }
+  </style>
 </head>
-<body>
-<div class="landing-wrap">
+<body class="bg-white">
+
+<div class="min-h-screen flex">
 
   <!-- ── Left brand panel ──────────────────────────────────────────────── -->
-  <div class="landing-brand">
-    <div class="brand-logo">PhotoShare</div>
-    <div class="brand-tagline">A place to share your best moments with the world.</div>
-    <div class="brand-features">
-      <div class="brand-feature">
-        <span class="brand-feature-dot"></span>
-        Upload photos and get AI-generated tags automatically
-      </div>
-      <div class="brand-feature">
-        <span class="brand-feature-dot"></span>
-        Browse, search and filter photos from all creators
-      </div>
-      <div class="brand-feature">
-        <span class="brand-feature-dot"></span>
-        Rate photos and leave comments in real time
+  <div class="hidden lg:flex flex-col justify-between bg-blue-600 w-1/2 p-14 relative overflow-hidden pattern-bg">
+
+    <div class="relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+        </div>
+        <span class="text-white font-black text-2xl tracking-tight">PhotoShare</span>
       </div>
     </div>
+
+    <div class="relative z-10 space-y-8">
+      <div>
+        <h2 class="text-4xl font-black text-white leading-tight">Share moments<br/>that matter.</h2>
+        <p class="mt-4 text-blue-100 text-lg leading-relaxed">A cloud-native platform for creators and consumers to connect through photography.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm">AI-powered tagging</p>
+            <p class="text-blue-200 text-sm">Automatic tags and captions via Azure Computer Vision</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm">Search &amp; filter</p>
+            <p class="text-blue-200 text-sm">Find photos by keyword, tag, location or rating</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <p class="text-white font-semibold text-sm">Ratings &amp; comments</p>
+            <p class="text-blue-200 text-sm">Engage with creators through real-time feedback</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="relative z-10 text-blue-300 text-xs">COM769 — Cloud Application Development &nbsp;·&nbsp; Ulster University</p>
   </div>
 
   <!-- ── Right form panel ──────────────────────────────────────────────── -->
-  <div class="landing-form-panel">
-    <p class="form-heading">Welcome back</p>
-    <p class="form-sub">Sign in to your account or create a new one.</p>
+  <div class="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:px-16 bg-white">
+    <div class="w-full max-w-sm mx-auto">
 
-    <!-- Role selector -->
-    <div class="role-tabs">
-      <button type="button" class="role-tab-btn active" id="tab-consumer" onclick="selectRole('consumer')">
-        &#128247; Consumer
-      </button>
-      <button type="button" class="role-tab-btn" id="tab-creator" onclick="selectRole('creator')">
-        &#127775; Creator
-      </button>
+      <!-- Mobile logo -->
+      <div class="flex items-center gap-2 mb-8 lg:hidden">
+        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+            <circle cx="12" cy="13" r="3"/>
+          </svg>
+        </div>
+        <span class="font-black text-xl text-gray-900 tracking-tight">PhotoShare</span>
+      </div>
+
+      <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Sign in to your account</h1>
+      <p class="mt-1.5 text-sm text-gray-500">No account yet? One will be created automatically.</p>
+
+      <!-- Role selector -->
+      <div class="mt-7 mb-6">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">I want to…</p>
+        <div class="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
+          <button type="button" id="tab-consumer" onclick="selectRole('consumer')"
+            class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all bg-blue-600 text-white shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Browse Photos
+          </button>
+          <button type="button" id="tab-creator" onclick="selectRole('creator')"
+            class="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+            Upload Photos
+          </button>
+        </div>
+        <p id="role-hint" class="mt-2 text-xs text-gray-400 text-center">Browse, rate and comment on photos as a consumer.</p>
+      </div>
+
+      <!-- Form -->
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" required
+            placeholder="Enter your username"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required
+            placeholder="Minimum 4 characters"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" />
+        </div>
+
+        <button type="submit" id="login-btn"
+          class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm py-3 rounded-xl transition-all mt-2 flex items-center justify-center gap-2">
+          Sign In / Register
+        </button>
+        <p id="login-error" class="text-red-500 text-xs font-medium text-center min-h-4"></p>
+      </form>
+
+      <p class="mt-6 text-xs text-gray-400 text-center leading-relaxed">
+        Select <strong class="text-gray-500">Upload Photos</strong> above to register as a creator with photo upload access.
+      </p>
     </div>
-    <p class="role-hint-text" id="role-hint">Browse, rate and comment on photos.</p>
-
-    <form class="login-form" id="login-form" onsubmit="handleLogin(event)">
-      <div class="form-group">
-        <label class="form-label" for="username">Username</label>
-        <input class="form-control" type="text" id="username"
-               placeholder="Enter your username" autocomplete="username" required />
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="password">Password</label>
-        <input class="form-control" type="password" id="password"
-               placeholder="Min 4 characters" autocomplete="current-password" required />
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-lg" id="login-btn" style="width:100%;margin-top:4px;">
-        Sign In / Register
-      </button>
-      <p class="error-text" id="login-error"></p>
-    </form>
-
-    <p class="login-note">
-      No account? Just enter any username and password — it is created automatically.<br/>
-      Select <strong>Creator</strong> above to get upload access.
-    </p>
   </div>
 
 </div>
@@ -81,11 +148,18 @@
 
   function selectRole(role) {
     selectedRole = role;
-    document.getElementById("tab-consumer").classList.toggle("active", role === "consumer");
-    document.getElementById("tab-creator").classList.toggle("active", role === "creator");
-    document.getElementById("role-hint").textContent = role === "creator"
-      ? "Upload and manage your own photos."
-      : "Browse, rate and comment on photos.";
+    const cBtn = document.getElementById("tab-consumer");
+    const uBtn = document.getElementById("tab-creator");
+    const hint = document.getElementById("role-hint");
+    if (role === "consumer") {
+      cBtn.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all bg-blue-600 text-white shadow-sm";
+      uBtn.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700";
+      hint.textContent = "Browse, rate and comment on photos as a consumer.";
+    } else {
+      uBtn.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all bg-blue-600 text-white shadow-sm";
+      cBtn.className = "flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700";
+      hint.textContent = "Upload and manage your own photos as a creator.";
+    }
   }
 
   async function handleLogin(e) {
@@ -97,37 +171,23 @@
     let username = document.getElementById("username").value.trim();
     const password = document.getElementById("password").value;
 
-    if (!username || !password) {
-      errEl.textContent = "Please enter a username and password.";
-      return;
-    }
-    if (password.length < 4) {
-      errEl.textContent = "Password must be at least 4 characters.";
-      return;
-    }
+    if (!username || !password) { errEl.textContent = "Please enter a username and password."; return; }
+    if (password.length < 4)    { errEl.textContent = "Password must be at least 4 characters."; return; }
 
-    if (selectedRole === "creator" && !username.endsWith("@creator")) {
-      username = username + "@creator";
-    }
-    if (selectedRole === "consumer" && username.endsWith("@creator")) {
-      username = username.replace(/@creator$/, "");
-    }
+    if (selectedRole === "creator" && !username.endsWith("@creator")) username += "@creator";
+    if (selectedRole === "consumer" && username.endsWith("@creator")) username = username.replace(/@creator$/, "");
 
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Signing in…';
 
     try {
       const result = await login(username, password);
-      saveSession(result.token, {
-        userId:   result.userId,
-        username: result.username,
-        role:     result.role,
-      });
+      saveSession(result.token, { userId: result.userId, username: result.username, role: result.role });
       window.location.href = result.role === "creator" ? "/creator.html" : "/consumer.html";
     } catch (err) {
       errEl.textContent = err.message || "Login failed. Please try again.";
       btn.disabled = false;
-      btn.textContent = "Sign In / Register";
+      btn.innerHTML = "Sign In / Register";
     }
   }
 </script>

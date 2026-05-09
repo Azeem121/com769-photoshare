@@ -4,158 +4,188 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PhotoShare — Browse</title>
-  <link rel="stylesheet" href="/shared/styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .spinner { display:inline-block;width:16px;height:16px;border:2px solid rgba(37,99,235,0.2);border-top-color:#2563eb;border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle; }
+    @keyframes spin { to { transform:rotate(360deg) } }
+    .card-img { transition: transform 0.35s ease; }
+    .photo-card:hover .card-img { transform: scale(1.06); }
+    .star { cursor:pointer; transition: transform 0.12s; }
+    .star:hover { transform: scale(1.25); }
+    .modal-enter { animation: modal-in 0.2s ease; }
+    @keyframes modal-in { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
+    .overlay-enter { animation: fade-in 0.15s ease; }
+    @keyframes fade-in { from { opacity:0 } to { opacity:1 } }
+    ::-webkit-scrollbar { width:4px; }
+    ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:4px; }
+  </style>
 </head>
-<body>
+<body class="bg-gray-50 min-h-screen">
 
-<!-- ── Navbar ───────────────────────────────────────────────────────────── -->
-<nav class="navbar">
-  <div class="navbar-brand">
-    <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="28" height="28" rx="7" fill="#2563EB"/>
-      <path d="M6 20l5-6 4 5 3-3 4 4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="19" cy="10" r="2" fill="#fff"/>
-    </svg>
-    PhotoShare
-  </div>
+<!-- ── Navbar ──────────────────────────────────────────────────────────── -->
+<nav class="sticky top-0 z-40 bg-white border-b border-gray-100 shadow-sm">
+  <div class="flex items-center gap-4 px-6 h-14">
 
-  <div class="navbar-search">
-    <span class="navbar-search-icon">&#128269;</span>
-    <input type="text" id="search-input" placeholder="Search photos, places, people…"
-           onkeydown="if(event.key==='Enter') applySearch()" />
-  </div>
-
-  <div class="navbar-right">
-    <div class="user-chip">
-      <div class="user-avatar" id="user-avatar-initials">?</div>
-      <span id="nav-username">…</span>
-      <span class="role-pill consumer">Consumer</span>
+    <!-- Brand -->
+    <div class="flex items-center gap-2.5 flex-shrink-0">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+        <svg class="w-4.5 h-4.5 text-white w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
+      </div>
+      <span class="font-black text-lg text-gray-900 tracking-tight">PhotoShare</span>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+
+    <!-- Search -->
+    <div class="flex-1 max-w-md relative">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Search photos, locations, people…"
+        onkeydown="if(event.key==='Enter')applySearch()"
+        class="w-full pl-9 pr-4 py-2 bg-gray-100 border border-transparent rounded-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition" />
+    </div>
+
+    <!-- Right -->
+    <div class="flex items-center gap-2 ml-auto">
+      <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1.5">
+        <div id="user-avatar" class="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">?</div>
+        <span id="nav-username" class="text-sm font-semibold text-gray-700 hidden sm:block">…</span>
+        <span class="text-xs font-bold px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">Consumer</span>
+      </div>
+      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition">Sign out</button>
+    </div>
   </div>
 </nav>
 
-<!-- ── Controls bar ──────────────────────────────────────────────────────── -->
-<div class="controls-bar">
-  <span class="form-label">Sort</span>
-  <select id="sort-select" onchange="applyFilters()">
-    <option value="recent">Most Recent</option>
-    <option value="rating">Top Rated</option>
-  </select>
-  <div class="controls-sep"></div>
-  <span class="form-label">Tag</span>
-  <select id="tag-select" onchange="applyFilters()">
-    <option value="">All Tags</option>
-  </select>
-  <div class="controls-sep"></div>
-  <button class="btn btn-outline btn-sm" onclick="applySearch()">&#128269; Search</button>
-  <button class="btn btn-ghost btn-sm" onclick="clearSearch()" id="clear-search-btn" style="display:none">&#10005; Clear</button>
-  <span id="result-count" style="font-size:0.8rem;color:var(--text-3);margin-left:4px;"></span>
+<!-- ── Filter bar ──────────────────────────────────────────────────────── -->
+<div class="bg-white border-b border-gray-100 px-6 py-2.5 flex items-center gap-4 flex-wrap">
+  <div class="flex items-center gap-2">
+    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Sort</span>
+    <select id="sort-select" onchange="applyFilters()"
+      class="text-sm font-medium text-gray-700 bg-gray-100 border-0 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+      <option value="recent">Most Recent</option>
+      <option value="rating">Top Rated</option>
+    </select>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tag</span>
+    <select id="tag-select" onchange="applyFilters()"
+      class="text-sm font-medium text-gray-700 bg-gray-100 border-0 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-200 cursor-pointer">
+      <option value="">All Tags</option>
+    </select>
+  </div>
+  <div class="flex items-center gap-2 ml-auto">
+    <button onclick="applySearch()" class="text-sm font-semibold text-blue-600 hover:text-blue-700 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition">Search</button>
+    <button id="clear-btn" onclick="clearSearch()" class="text-sm font-semibold text-gray-500 hover:text-gray-700 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition hidden">✕ Clear</button>
+    <span id="result-count" class="text-xs text-gray-400 font-medium"></span>
+  </div>
 </div>
 
-<!-- ── Photo Grid ────────────────────────────────────────────────────────── -->
-<main>
-  <div class="photo-grid" id="photos-grid">
-    <div class="placeholder">
-      <div class="placeholder-icon">&#128247;</div>
-      <span class="spinner"></span>
-      <p>Loading photos…</p>
+<!-- ── Grid ────────────────────────────────────────────────────────────── -->
+<main class="px-6 py-6">
+  <div id="photos-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <div class="col-span-full flex flex-col items-center justify-center py-24 gap-3 text-gray-400">
+      <span class="spinner" style="width:28px;height:28px;border-width:3px;"></span>
+      <p class="text-sm">Loading photos…</p>
     </div>
   </div>
-  <div class="load-more-bar">
-    <button id="load-more-btn" class="btn btn-outline hidden" onclick="loadMore()">Load more photos</button>
+  <div class="text-center mt-6">
+    <button id="load-more-btn" onclick="loadMore()"
+      class="hidden px-6 py-2.5 border border-gray-200 rounded-full text-sm font-semibold text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition">
+      Load more
+    </button>
   </div>
 </main>
 
-<!-- ── Photo Detail Modal ────────────────────────────────────────────────── -->
-<div class="modal-overlay hidden" id="modal-overlay" onclick="handleOverlayClick(event)">
-  <div class="modal" id="modal" role="dialog" aria-modal="true">
+<!-- ── Modal ───────────────────────────────────────────────────────────── -->
+<div id="modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overlay-enter" onclick="handleOverlayClick(event)">
+  <div class="modal-enter bg-white rounded-2xl w-full max-w-4xl max-h-[92vh] flex flex-col md:flex-row overflow-hidden shadow-2xl">
 
-    <div class="modal-image-pane">
-      <img id="modal-img" src="" alt="" />
+    <!-- Image -->
+    <div class="bg-gray-900 md:w-[55%] flex-shrink-0 flex items-center justify-center min-h-[240px]">
+      <img id="modal-img" src="" alt="" class="w-full h-full object-contain max-h-[92vh]" />
     </div>
 
-    <div class="modal-info-pane">
-      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close">&#215;</button>
+    <!-- Info -->
+    <div class="flex flex-col flex-1 overflow-y-auto">
+      <!-- Header -->
+      <div class="flex items-start justify-between p-5 border-b border-gray-100">
+        <div class="flex-1 pr-4">
+          <h2 id="modal-title" class="text-lg font-bold text-gray-900 leading-snug">Loading…</h2>
+          <p id="modal-caption" class="text-sm text-gray-500 mt-1 leading-relaxed"></p>
+        </div>
+        <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition flex-shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
 
-      <h2 class="modal-title" id="modal-title">Loading…</h2>
-      <p class="modal-caption" id="modal-caption"></p>
+      <!-- Meta -->
+      <div id="modal-meta" class="px-5 py-3 border-b border-gray-100 space-y-1.5 text-sm text-gray-500"></div>
 
-      <div class="modal-meta" id="modal-meta"></div>
-
-      <div class="ai-tags" id="modal-ai-tags"></div>
-
-      <div class="modal-divider"></div>
+      <!-- AI tags -->
+      <div id="modal-tags" class="px-5 py-3 border-b border-gray-100 flex flex-wrap gap-1.5 hidden"></div>
 
       <!-- Rating -->
-      <div class="rating-widget">
-        <span class="rating-label">Rate this photo</span>
-        <div class="stars-row">
-          <div class="stars-input" id="star-input" role="group" aria-label="Star rating">
-            <span class="star" data-v="1">&#9733;</span>
-            <span class="star" data-v="2">&#9733;</span>
-            <span class="star" data-v="3">&#9733;</span>
-            <span class="star" data-v="4">&#9733;</span>
-            <span class="star" data-v="5">&#9733;</span>
+      <div class="px-5 py-3 border-b border-gray-100">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Rate this photo</p>
+        <div class="flex items-center gap-3">
+          <div id="star-input" class="flex gap-0.5">
+            <span class="star text-2xl text-gray-200" data-v="1">★</span>
+            <span class="star text-2xl text-gray-200" data-v="2">★</span>
+            <span class="star text-2xl text-gray-200" data-v="3">★</span>
+            <span class="star text-2xl text-gray-200" data-v="4">★</span>
+            <span class="star text-2xl text-gray-200" data-v="5">★</span>
           </div>
-          <span class="rating-summary" id="rating-summary"></span>
+          <span id="rating-summary" class="text-xs text-gray-400 font-medium"></span>
         </div>
       </div>
-
-      <div class="modal-divider"></div>
 
       <!-- Comments -->
-      <div class="comments-section">
-        <span class="section-title">Comments</span>
-        <div class="comments-list" id="comments-list">
-          <p class="no-content">No comments yet. Be the first!</p>
+      <div class="flex-1 flex flex-col px-5 py-4 gap-3 min-h-0">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Comments</p>
+        <div id="comments-list" class="flex-1 overflow-y-auto space-y-2 max-h-40 pr-1">
+          <p class="text-sm text-gray-400">No comments yet.</p>
         </div>
-        <form class="comment-form" id="comment-form" onsubmit="submitComment(event)">
-          <textarea class="form-control" id="comment-text"
-                    placeholder="Write a comment…" maxlength="1000" required></textarea>
-          <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+        <form onsubmit="submitComment(event)" class="flex gap-2 pt-2 border-t border-gray-100">
+          <input type="text" id="comment-text" maxlength="1000" placeholder="Write a comment…"
+            class="flex-1 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 transition" />
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">Post</button>
         </form>
-        <p class="error-text" id="comment-error"></p>
+        <p id="comment-error" class="text-xs text-red-500 font-medium"></p>
       </div>
     </div>
-
   </div>
 </div>
 
 <script src="/shared/auth.js"></script>
 <script src="/shared/api.js"></script>
 <script>
-  // ── State ────────────────────────────────────────────────────────────────
-  let currentPage   = 1;
-  const PAGE_SIZE   = 12;
-  let activeSearch  = "";
-  let activeSort    = "recent";
-  let activeTag     = "";
-  let openPhotoId   = null;
-  let knownTags     = new Set();
+  let currentPage = 1, PAGE_SIZE = 18;
+  let activeSearch = "", activeSort = "recent", activeTag = "";
+  let openPhotoId = null, knownTags = new Set();
 
-  // ── Boot ─────────────────────────────────────────────────────────────────
   (async () => {
     const user = requireAuth("consumer");
     if (!user) return;
     setNavUser(user);
-    const initials = (user.username || "?")[0].toUpperCase();
-    document.getElementById("user-avatar-initials").textContent = initials;
+    document.getElementById("user-avatar").textContent = (user.username || "?")[0].toUpperCase();
     setupStars();
     await loadPhotos(true);
   })();
 
-  // ── Search / Filter ───────────────────────────────────────────────────────
   function applySearch() {
     activeSearch = document.getElementById("search-input").value.trim();
-    document.getElementById("clear-search-btn").style.display = activeSearch ? "" : "none";
+    document.getElementById("clear-btn").classList.toggle("hidden", !activeSearch);
     applyFilters();
   }
 
   function clearSearch() {
     document.getElementById("search-input").value = "";
     activeSearch = "";
-    document.getElementById("clear-search-btn").style.display = "none";
+    document.getElementById("clear-btn").classList.add("hidden");
     applyFilters();
   }
 
@@ -165,159 +195,124 @@
     loadPhotos(true);
   }
 
-  // ── Load Photos ───────────────────────────────────────────────────────────
   async function loadPhotos(reset) {
     if (reset) {
       currentPage = 1;
       document.getElementById("photos-grid").innerHTML =
-        '<div class="placeholder"><span class="spinner"></span><p>Loading…</p></div>';
+        '<div class="col-span-full flex flex-col items-center py-24 gap-3 text-gray-400"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span><p class="text-sm">Loading…</p></div>';
     }
     try {
-      const data = await listPhotos({
-        search: activeSearch, sort: activeSort,
-        tag: activeTag, page: currentPage, limit: PAGE_SIZE,
-      });
-
-      if (!data || !data.photos) {
-        document.getElementById("photos-grid").innerHTML =
-          '<div class="placeholder"><div class="placeholder-icon">&#9888;</div><h3>Unexpected response</h3></div>';
-        return;
-      }
+      const data = await listPhotos({ search: activeSearch, sort: activeSort, tag: activeTag, page: currentPage, limit: PAGE_SIZE });
+      if (!data?.photos) return;
 
       const grid = document.getElementById("photos-grid");
       if (reset) grid.innerHTML = "";
 
       if (!data.photos.length && reset) {
-        grid.innerHTML = `
-          <div class="placeholder">
-            <div class="placeholder-icon">&#128247;</div>
-            <h3>No photos found</h3>
-            <p>${activeSearch ? `No results for "${escHtml(activeSearch)}"` : "Check back soon!"}</p>
-          </div>`;
+        grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-24 gap-3 text-gray-400">
+          <svg class="w-12 h-12 text-gray-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+          <p class="font-semibold text-gray-400">${activeSearch ? `No results for "${esc(activeSearch)}"` : "No photos yet — check back soon!"}</p>
+        </div>`;
         document.getElementById("load-more-btn").classList.add("hidden");
         document.getElementById("result-count").textContent = "";
         return;
       }
 
-      data.photos.forEach(p => {
-        (p.aiTags || []).forEach(t => knownTags.add(t));
-        grid.appendChild(makeCard(p));
-      });
-
-      populateTagFilter();
-
-      const total = data.total || 0;
-      document.getElementById("result-count").textContent = total
-        ? `${total} photo${total !== 1 ? "s" : ""}` : "";
-
-      document.getElementById("load-more-btn")
-        .classList.toggle("hidden", data.photos.length < PAGE_SIZE);
+      data.photos.forEach(p => { (p.aiTags||[]).forEach(t => knownTags.add(t)); grid.appendChild(makeCard(p)); });
+      updateTagFilter();
+      document.getElementById("result-count").textContent = data.total ? `${data.total} photo${data.total!==1?"s":""}` : "";
+      document.getElementById("load-more-btn").classList.toggle("hidden", data.photos.length < PAGE_SIZE);
     } catch (err) {
       document.getElementById("photos-grid").innerHTML =
-        `<div class="placeholder"><div class="placeholder-icon">&#9888;</div><h3>Could not load photos</h3><p>${escHtml(err.message)}</p></div>`;
+        `<div class="col-span-full text-center py-24 text-red-400 text-sm">Failed to load: ${esc(err.message)}</div>`;
     }
   }
 
   function loadMore() { currentPage++; loadPhotos(false); }
 
-  function populateTagFilter() {
-    const sel = document.getElementById("tag-select");
-    const cur = sel.value;
+  function updateTagFilter() {
+    const sel = document.getElementById("tag-select"), cur = sel.value;
     sel.innerHTML = '<option value="">All Tags</option>';
     [...knownTags].sort().forEach(t => {
       const o = document.createElement("option");
-      o.value = t; o.textContent = t;
-      if (t === cur) o.selected = true;
+      o.value = t; o.textContent = t; if (t===cur) o.selected = true;
       sel.appendChild(o);
     });
   }
 
-  // ── Card ──────────────────────────────────────────────────────────────────
   function makeCard(photo) {
-    const card = document.createElement("div");
-    card.className = "photo-card";
-    card.onclick = () => openModal(photo.id);
-
-    const stars = photo.avgRating
-      ? `<span class="star-filled">&#9733;</span> ${photo.avgRating.toFixed(1)}`
-      : "&#9733; —";
-
-    const tagsHtml = (photo.aiTags || []).slice(0, 3)
-      .map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("");
-
-    card.innerHTML = `
-      <div class="photo-card-thumb">
-        <img src="${photo.imageUrl}" alt="${escHtml(photo.title)}" loading="lazy" />
+    const div = document.createElement("div");
+    div.className = "photo-card group relative bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer";
+    div.onclick = () => openModal(photo.id);
+    const rating = photo.avgRating ? `<span class="text-amber-400">★</span> ${photo.avgRating.toFixed(1)}` : `<span class="text-gray-300">★</span> —`;
+    const tags = (photo.aiTags||[]).slice(0,2).map(t=>`<span class="text-xs bg-blue-50 text-blue-600 font-medium px-1.5 py-0.5 rounded-md">${esc(t)}</span>`).join("");
+    div.innerHTML = `
+      <div class="aspect-square bg-gray-100 overflow-hidden">
+        <img src="${photo.imageUrl}" alt="${esc(photo.title)}" loading="lazy" class="card-img w-full h-full object-cover" />
       </div>
-      <div class="photo-card-body">
-        <div class="photo-card-title">${escHtml(photo.title)}</div>
-        ${photo.location ? `<div class="photo-card-meta">&#128205; ${escHtml(photo.location)}</div>` : ""}
-        <div class="photo-card-rating">${stars}</div>
-        ${tagsHtml ? `<div class="ai-tags">${tagsHtml}</div>` : ""}
+      <div class="p-2.5">
+        <p class="text-xs font-semibold text-gray-800 truncate">${esc(photo.title)}</p>
+        ${photo.location?`<p class="text-xs text-gray-400 truncate mt-0.5">📍 ${esc(photo.location)}</p>`:""}
+        <div class="flex items-center justify-between mt-1.5">
+          <span class="text-xs text-gray-400 font-medium">${rating}</span>
+          <div class="flex gap-1">${tags}</div>
+        </div>
       </div>`;
-    return card;
+    return div;
   }
 
-  // ── Modal ─────────────────────────────────────────────────────────────────
   async function openModal(photoId) {
     openPhotoId = photoId;
     document.getElementById("modal-overlay").classList.remove("hidden");
     document.body.style.overflow = "hidden";
-
     document.getElementById("modal-img").src = "";
     document.getElementById("modal-title").textContent = "Loading…";
     document.getElementById("modal-caption").textContent = "";
     document.getElementById("modal-meta").innerHTML = "";
-    document.getElementById("modal-ai-tags").innerHTML = "";
-    document.getElementById("comments-list").innerHTML = "<p class='no-content'>Loading…</p>";
+    document.getElementById("modal-tags").innerHTML = "";
+    document.getElementById("modal-tags").classList.add("hidden");
+    document.getElementById("comments-list").innerHTML = "<p class='text-sm text-gray-400'>Loading…</p>";
     document.getElementById("rating-summary").textContent = "";
     document.getElementById("comment-error").textContent = "";
     resetStars(null);
-
-    try {
-      const photo = await getPhoto(photoId);
-      renderModal(photo);
-    } catch (err) {
-      document.getElementById("modal-title").textContent = "Failed to load photo.";
-    }
+    try { renderModal(await getPhoto(photoId)); }
+    catch (err) { document.getElementById("modal-title").textContent = "Failed to load photo."; }
   }
 
-  function renderModal(photo) {
-    document.getElementById("modal-img").src = photo.imageUrl;
-    document.getElementById("modal-img").alt = photo.title;
-    document.getElementById("modal-title").textContent = photo.title;
-    document.getElementById("modal-caption").textContent = photo.caption || "";
+  function renderModal(p) {
+    document.getElementById("modal-img").src = p.imageUrl;
+    document.getElementById("modal-img").alt = p.title;
+    document.getElementById("modal-title").textContent = p.title;
+    document.getElementById("modal-caption").textContent = p.caption || "";
 
     const meta = [];
-    if (photo.location) meta.push(`<div class="modal-meta-row">&#128205; ${escHtml(photo.location)}</div>`);
-    if (photo.people?.length) meta.push(`<div class="modal-meta-row">&#128100; ${photo.people.map(escHtml).join(", ")}</div>`);
-    if (photo.uploaderName) meta.push(`<div class="modal-meta-row">&#128247; ${escHtml(photo.uploaderName)}</div>`);
-    if (photo.createdAt) meta.push(`<div class="modal-meta-row">&#128197; ${new Date(photo.createdAt).toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"})}</div>`);
+    if (p.location) meta.push(`<div class="flex items-center gap-1.5">📍 <span>${esc(p.location)}</span></div>`);
+    if (p.people?.length) meta.push(`<div class="flex items-center gap-1.5">👥 <span>${p.people.map(esc).join(", ")}</span></div>`);
+    if (p.uploaderName) meta.push(`<div class="flex items-center gap-1.5">📷 <span class="font-medium text-gray-700">${esc(p.uploaderName)}</span></div>`);
+    if (p.createdAt) meta.push(`<div class="flex items-center gap-1.5">🗓 <span>${new Date(p.createdAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</span></div>`);
     document.getElementById("modal-meta").innerHTML = meta.join("");
 
-    const tagsContainer = document.getElementById("modal-ai-tags");
-    tagsContainer.innerHTML = (photo.aiTags || []).length
-      ? photo.aiTags.map(t => `<span class="ai-tag">${escHtml(t)}</span>`).join("") : "";
+    const tagsEl = document.getElementById("modal-tags");
+    if (p.aiTags?.length) {
+      tagsEl.innerHTML = p.aiTags.map(t=>`<span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2 py-1 rounded-lg">${esc(t)}</span>`).join("");
+      tagsEl.classList.remove("hidden");
+    }
 
-    const summary = photo.avgRating
-      ? `${photo.avgRating.toFixed(1)} / 5 &nbsp;(${photo.ratingCount} rating${photo.ratingCount !== 1 ? "s" : ""})`
+    const sum = p.avgRating
+      ? `${p.avgRating.toFixed(1)} / 5 · ${p.ratingCount} rating${p.ratingCount!==1?"s":""}`
       : "No ratings yet";
-    document.getElementById("rating-summary").innerHTML = summary;
-    if (photo.ownRating) resetStars(photo.ownRating);
-
-    renderComments(photo.comments || []);
+    document.getElementById("rating-summary").textContent = sum;
+    if (p.ownRating) resetStars(p.ownRating);
+    renderComments(p.comments || []);
   }
 
   function renderComments(comments) {
     const list = document.getElementById("comments-list");
-    if (!comments.length) {
-      list.innerHTML = "<p class='no-content'>No comments yet. Be the first!</p>";
-      return;
-    }
-    list.innerHTML = comments.map(c => `
-      <div class="comment-item">
-        <div class="comment-author">${escHtml(c.authorName || "User")}</div>
-        <div>${escHtml(c.text)}</div>
+    if (!comments.length) { list.innerHTML = "<p class='text-sm text-gray-400'>No comments yet. Be the first!</p>"; return; }
+    list.innerHTML = comments.map(c=>`
+      <div class="bg-gray-50 rounded-lg px-3 py-2">
+        <p class="text-xs font-semibold text-blue-600 mb-0.5">${esc(c.authorName||"User")}</p>
+        <p class="text-xs text-gray-700">${esc(c.text)}</p>
       </div>`).join("");
     list.scrollTop = list.scrollHeight;
   }
@@ -328,65 +323,56 @@
     openPhotoId = null;
   }
 
-  function handleOverlayClick(e) {
-    if (e.target.id === "modal-overlay") closeModal();
-  }
+  function handleOverlayClick(e) { if (e.target.id === "modal-overlay") closeModal(); }
 
-  // ── Comment submit ─────────────────────────────────────────────────────────
   async function submitComment(e) {
     e.preventDefault();
-    const text  = document.getElementById("comment-text").value.trim();
+    const input = document.getElementById("comment-text");
+    const text = input.value.trim();
     const errEl = document.getElementById("comment-error");
     errEl.textContent = "";
     if (!text || !openPhotoId) return;
     try {
       await addComment(openPhotoId, text);
-      document.getElementById("comment-text").value = "";
-      const photo = await getPhoto(openPhotoId);
-      renderComments(photo.comments || []);
-    } catch (err) {
-      errEl.textContent = err.message;
-    }
+      input.value = "";
+      renderComments((await getPhoto(openPhotoId)).comments || []);
+    } catch (err) { errEl.textContent = err.message; }
   }
 
-  // ── Stars ──────────────────────────────────────────────────────────────────
   function setupStars() {
-    document.querySelectorAll("#star-input .star").forEach(star => {
-      star.addEventListener("mouseover", () => highlightStars(+star.dataset.v));
-      star.addEventListener("mouseout",  () => resetStars(null));
-      star.addEventListener("click",     () => submitRating(+star.dataset.v));
+    document.querySelectorAll("#star-input .star").forEach(s => {
+      s.addEventListener("mouseover", () => highlightStars(+s.dataset.v));
+      s.addEventListener("mouseout",  () => resetStars(null));
+      s.addEventListener("click",     () => submitRating(+s.dataset.v));
     });
   }
 
-  function highlightStars(upTo) {
+  function highlightStars(n) {
     document.querySelectorAll("#star-input .star").forEach(s => {
-      s.classList.toggle("lit", +s.dataset.v <= upTo);
+      s.style.color = +s.dataset.v <= n ? "#F59E0B" : "#E5E7EB";
     });
   }
 
-  function resetStars(selected) {
+  function resetStars(sel) {
     document.querySelectorAll("#star-input .star").forEach(s => {
-      s.classList.toggle("lit", selected !== null && +s.dataset.v <= selected);
+      s.style.color = (sel !== null && +s.dataset.v <= sel) ? "#F59E0B" : "#E5E7EB";
     });
   }
 
   async function submitRating(value) {
     if (!openPhotoId) return;
     try {
-      const result = await ratePhoto(openPhotoId, value);
+      const r = await ratePhoto(openPhotoId, value);
       resetStars(value);
-      document.getElementById("rating-summary").innerHTML =
-        `${result.avgRating.toFixed(1)} / 5 &nbsp;(${result.ratingCount} rating${result.ratingCount !== 1 ? "s" : ""})`;
+      document.getElementById("rating-summary").textContent =
+        `${r.avgRating.toFixed(1)} / 5 · ${r.ratingCount} rating${r.ratingCount!==1?"s":""}`;
     } catch (err) {
       document.getElementById("comment-error").textContent = `Rating failed: ${err.message}`;
     }
   }
 
-  // ── Util ───────────────────────────────────────────────────────────────────
-  function escHtml(str) {
-    return String(str ?? "")
-      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  function esc(s) {
+    return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 </script>
 </body>
