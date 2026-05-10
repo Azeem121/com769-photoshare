@@ -59,24 +59,16 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.error("Failed to upsert rating: %s", exc)
         return auth_helper.make_response({"error": "Failed to save rating"}, 500)
 
-    agg_query = """
-        SELECT VALUE {
-            "count": COUNT(1),
-            "sum": SUM(c.rating)
-        }
-        FROM c
-        WHERE c.photoId = @photoId
-    """
+    agg_query = "SELECT c.rating FROM c WHERE c.photoId = @photoId"
     agg_params = [{"name": "@photoId", "value": photo_id}]
 
     try:
-        agg_results = cosmos_client.query_items("ratings", agg_query, agg_params)
-        agg = agg_results[0] if agg_results else {"count": 1, "sum": rating_value}
-        count = agg.get("count", 1)
-        total = agg.get("sum", rating_value)
+        all_ratings = cosmos_client.query_items("ratings", agg_query, agg_params)
+        count = len(all_ratings)
+        total = sum(r.get("rating", 0) for r in all_ratings)
         avg = round(total / count, 2) if count > 0 else 0.0
     except Exception as exc:
-        logging.warning("Aggregate query failed; using estimate: %s", exc)
+        logging.warning("Rating aggregate failed; using submitted value: %s", exc)
         count, avg = 1, float(rating_value)
 
     photo_query = "SELECT * FROM c WHERE c.id = @id"

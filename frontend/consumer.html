@@ -230,6 +230,7 @@
             </div>
             <span id="rating-summary" style="font-size:12px;font-weight:600;color:#94A3B8;"></span>
           </div>
+          <p id="rating-error" style="display:none;font-size:12px;font-weight:600;color:#EF4444;margin:6px 0 0;"></p>
         </div>
 
         <!-- Comments -->
@@ -369,6 +370,7 @@
     document.getElementById("comments-list").innerHTML = "<p style='color:#94A3B8;font-size:13px;margin:0;'>Loading…</p>";
     document.getElementById("rating-summary").textContent = "";
     document.getElementById("comment-error").style.display = "none";
+    document.getElementById("rating-error").style.display = "none";
     resetStars(null);
     try { renderModal(await getPhoto(photoId)); }
     catch (err) { document.getElementById("modal-title").textContent = "Failed to load."; }
@@ -434,11 +436,35 @@
     const text  = input.value.trim();
     errEl.style.display = "none";
     if (!text || !openPhotoId) return;
+    const btn = e.submitter || document.querySelector('#modal-bg button[type="submit"]');
     try {
-      await addComment(openPhotoId, text);
+      if (btn) { btn.disabled = true; btn.textContent = "Posting…"; }
+      const newComment = await addComment(openPhotoId, text);
       input.value = "";
-      renderComments((await getPhoto(openPhotoId)).comments || []);
-    } catch (err) { errEl.textContent = err.message; errEl.style.display = "block"; }
+      // Append directly — don't re-fetch (photo_get was previously cached)
+      appendComment(newComment);
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.style.display = "block";
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "Post"; }
+    }
+  }
+
+  function appendComment(c) {
+    const list = document.getElementById("comments-list");
+    const empty = list.querySelector("p");
+    if (empty) empty.remove();
+    const div = document.createElement("div");
+    div.className = "comment-bubble";
+    div.innerHTML = `
+      <div class="comment-avatar">${esc((c.authorName||"?")[0]).toUpperCase()}</div>
+      <div class="comment-body">
+        <p style="margin:0 0 3px;font-size:12px;font-weight:800;color:#374151;">${esc(c.authorName||"User")}</p>
+        <p style="margin:0;font-size:12.5px;color:#4B5563;line-height:1.4;">${esc(c.text)}</p>
+      </div>`;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
   }
 
   function setupStars() {
@@ -460,14 +486,19 @@
   }
   async function submitRating(value) {
     if (!openPhotoId) return;
+    document.getElementById("rating-error").style.display = "none";
+    document.querySelectorAll("#star-input .star").forEach(s => s.style.pointerEvents = "none");
     try {
       const r = await ratePhoto(openPhotoId, value);
       resetStars(value);
       document.getElementById("rating-summary").textContent =
         `${r.avgRating.toFixed(1)} / 5 · ${r.ratingCount} rating${r.ratingCount!==1?"s":""}`;
     } catch (err) {
-      document.getElementById("comment-error").textContent = `Rating failed: ${err.message}`;
-      document.getElementById("comment-error").style.display = "block";
+      const errEl = document.getElementById("rating-error");
+      errEl.textContent = `Rating failed: ${err.message}`;
+      errEl.style.display = "block";
+    } finally {
+      document.querySelectorAll("#star-input .star").forEach(s => s.style.pointerEvents = "");
     }
   }
 

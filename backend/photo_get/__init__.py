@@ -65,8 +65,7 @@ def _handle_get(req: func.HttpRequest, photo_id: str) -> func.HttpResponse:
 
     photo["comments"] = comments
     photo["ownRating"] = own_rating
-    # Cache for 15 s — short enough to see new comments quickly
-    return auth_helper.make_response(photo, cache_seconds=15)
+    return auth_helper.make_response(photo)
 
 
 def _handle_delete(req: func.HttpRequest, photo_id: str) -> func.HttpResponse:
