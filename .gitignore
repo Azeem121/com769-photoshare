@@ -23,3 +23,10 @@ Thumbs.db
 # IDE
 .vscode/settings.json
 *.code-workspace
+
+# Claude Code
+.claude/
+
+# Build artifacts
+backend.zip
+*.zip
