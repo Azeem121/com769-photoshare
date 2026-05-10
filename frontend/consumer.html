@@ -13,6 +13,12 @@
     .spinner { display:inline-block;width:22px;height:22px;border:3px solid rgba(37,99,235,.15);border-top-color:#2563EB;border-radius:50%;animation:spin .7s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
+    /* Responsive masonry — pure CSS, no Tailwind dependency */
+    @media (min-width: 640px)  { #photos-grid { columns: 3; } }
+    @media (min-width: 768px)  { #photos-grid { columns: 4; } }
+    @media (min-width: 1024px) { #photos-grid { columns: 5; } }
+    @media (min-width: 1280px) { #photos-grid { columns: 6; } }
+
     /* Navbar */
     .navbar {
       position: sticky; top: 0; z-index: 40; height: 60px;
@@ -143,7 +149,7 @@
 
 <!-- ── Photo Grid ───────────────────────────────────────────────────────────── -->
 <main style="max-width:1600px;margin:0 auto;padding:24px;">
-  <div id="photos-grid" style="columns:2;column-gap:14px;" class="sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6">
+  <div id="photos-grid" style="columns:2;column-gap:14px;">
     <div style="column-span:all;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 0;gap:16px;color:#94A3B8;">
       <span class="spinner"></span>
       <p style="margin:0;font-size:14px;font-weight:500;">Loading photos…</p>

@@ -12,6 +12,12 @@
     body { font-family: 'Inter', system-ui, sans-serif; margin: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Responsive grid — pure CSS, no Tailwind dependency */
+    @media (min-width: 640px)  { #my-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1024px) { #my-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1280px) { #my-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1536px) { #my-grid { grid-template-columns: repeat(5, 1fr); } }
     .spinner { display:inline-block; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; }
     .card-enter { animation: fadeIn 0.3s ease both; }
     .photo-card:hover .card-img { transform: scale(1.07); }
@@ -210,7 +216,7 @@
       </button>
     </div>
 
-    <div id="my-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5" style="gap:16px;">
+    <div id="my-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
       <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:80px 0;gap:12px;color:#94A3B8;">
         <span class="spinner" style="width:24px;height:24px;border:2.5px solid #DBEAFE;border-top-color:#2563EB;"></span>
         <p style="font-size:13px;font-weight:500;margin:0;">Loading your photos…</p>

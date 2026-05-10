@@ -18,6 +18,13 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Left panel responsive — pure CSS, no Tailwind dependency */
+    #left-panel { display: none; }
+    @media (min-width: 1024px) { #left-panel { display: flex !important; } }
+
+    #mobile-logo { display: flex; }
+    @media (min-width: 1024px) { #mobile-logo { display: none !important; } }
+
     /* Left panel grid overlay */
     .grid-overlay {
       background-image:
@@ -91,12 +98,7 @@
 <div style="min-height:100vh; display:flex;">
 
   <!-- ══ LEFT PANEL ═══════════════════════════════════════════════════════ -->
-  <div class="hidden lg:flex" style="
-    width: 46%; flex-shrink: 0;
-    background: linear-gradient(150deg, #0F172A 0%, #1E3A8A 45%, #1D4ED8 100%);
-    padding: 56px; position: relative; overflow: hidden;
-    flex-direction: column; justify-content: space-between;
-  ">
+  <div id="left-panel" style="width:46%;flex-shrink:0;background:linear-gradient(150deg,#0F172A 0%,#1E3A8A 45%,#1D4ED8 100%);padding:56px;position:relative;overflow:hidden;flex-direction:column;justify-content:space-between;">
     <div class="grid-overlay"></div>
 
     <!-- Glow blobs -->
@@ -166,7 +168,7 @@
     <div style="width:100%;max-width:400px;">
 
       <!-- Mobile logo -->
-      <div class="flex items-center gap-3 mb-7 lg:hidden">
+      <div id="mobile-logo" style="align-items:center;gap:12px;margin-bottom:28px;">
         <div style="width:38px;height:38px;background:#2563EB;border-radius:12px;display:flex;align-items:center;justify-content:center;">
           <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
             <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
