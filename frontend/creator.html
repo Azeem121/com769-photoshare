@@ -8,196 +8,236 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .spinner { display:inline-block;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle; }
-    .spinner-white { border:2.5px solid rgba(255,255,255,.3); border-top-color:#fff; }
-    .spinner-blue  { border:2.5px solid rgba(37,99,235,.15); border-top-color:#2563eb; }
-    @keyframes spin { to { transform:rotate(360deg) } }
-    .card-img  { transition: transform 0.4s cubic-bezier(.25,.46,.45,.94); }
-    .photo-card:hover .card-img { transform: scale(1.06); }
-    .card-overlay { background: linear-gradient(to top, rgba(0,0,0,.7) 0%, transparent 55%); }
-    .drop-active  { border-color:#2563EB !important; background:#EFF6FF !important; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; margin: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .spinner { display:inline-block; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; }
+    .card-enter { animation: fadeIn 0.3s ease both; }
+    .photo-card:hover .card-img { transform: scale(1.07); }
+    .card-img { transition: transform 0.45s cubic-bezier(.25,.46,.45,.94); }
+    .del-btn { opacity:0; transition: opacity 0.2s; }
+    .photo-card:hover .del-btn { opacity:1; }
     ::-webkit-scrollbar { width:5px; }
-    ::-webkit-scrollbar-thumb { background:#E2E8F0; border-radius:8px; }
+    ::-webkit-scrollbar-thumb { background:#CBD5E1; border-radius:8px; }
+    input:focus, textarea:focus { outline:none; box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
+    .dz-hover { border-color:#2563EB !important; background:#EFF6FF !important; }
   </style>
 </head>
-<body class="bg-[#F8FAFC] min-h-screen">
+<body style="background:#F1F5F9; min-height:100vh;">
 
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
-<nav class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
-  <div class="max-w-screen-2xl mx-auto flex items-center gap-4 px-5" style="height:60px;">
-    <a href="#" class="flex items-center gap-2.5 flex-shrink-0 group">
-      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+<nav style="position:sticky;top:0;z-index:40;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);border-bottom:1px solid #E2E8F0;">
+  <div style="max-width:1600px;margin:0 auto;padding:0 20px;height:60px;display:flex;align-items:center;gap:16px;">
+
+    <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0;">
+      <div style="width:36px;height:36px;background:#2563EB;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           <circle cx="12" cy="13" r="3"/>
         </svg>
       </div>
       <div>
-        <span class="font-black text-lg text-gray-900 tracking-tight">PhotoShare</span>
-        <span class="ml-2 text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Studio</span>
+        <span style="font-size:17px;font-weight:900;color:#0F172A;letter-spacing:-0.5px;">PhotoShare</span>
+        <span style="margin-left:8px;font-size:11px;font-weight:700;background:#FEF3C7;color:#B45309;padding:2px 8px;border-radius:20px;">Studio</span>
       </div>
     </a>
-    <div class="flex items-center gap-2 ml-auto">
-      <div class="hidden sm:flex items-center gap-2 bg-gray-100 rounded-2xl px-3 py-1.5">
-        <div id="user-avatar" class="w-6 h-6 rounded-full bg-amber-500 text-white text-xs font-bold flex items-center justify-center">?</div>
-        <span id="nav-username" class="text-sm font-semibold text-gray-700 max-w-[120px] truncate">…</span>
-        <span class="text-xs font-bold px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full">Creator</span>
-      </div>
-      <button onclick="logout()" class="text-sm font-semibold text-gray-500 hover:text-red-500 px-3 py-2 rounded-xl hover:bg-red-50 transition-all">Sign out</button>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:24px;padding:6px 12px 6px 8px;">
+      <div id="user-avatar" style="width:28px;height:28px;border-radius:50%;background:#F59E0B;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">?</div>
+      <span id="nav-username" style="font-size:13px;font-weight:600;color:#374151;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">…</span>
+      <span style="font-size:11px;font-weight:700;background:#FEF3C7;color:#B45309;padding:2px 8px;border-radius:20px;">Creator</span>
     </div>
+
+    <button onclick="logout()" style="font-size:13px;font-weight:600;color:#94A3B8;background:transparent;border:none;padding:8px 14px;border-radius:12px;cursor:pointer;transition:color 0.15s,background 0.15s;"
+      onmouseover="this.style.color='#EF4444';this.style.background='#FEF2F2';"
+      onmouseout="this.style.color='#94A3B8';this.style.background='transparent';">
+      Sign out
+    </button>
   </div>
 </nav>
 
-<!-- ── Stats strip ─────────────────────────────────────────────────────────── -->
-<div class="bg-white border-b border-gray-100">
-  <div class="max-w-screen-2xl mx-auto px-5 py-3 flex items-center gap-6">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg>
+<!-- ── Stats bar ────────────────────────────────────────────────────────────── -->
+<div style="background:#fff;border-bottom:1px solid #E2E8F0;">
+  <div style="max-width:1600px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;gap:32px;">
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:#EFF6FF;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
       </div>
       <div>
-        <p class="text-xs text-gray-400 font-medium">My Photos</p>
-        <p id="stat-count" class="text-sm font-bold text-gray-900">—</p>
+        <div style="font-size:11px;color:#94A3B8;font-weight:500;">My Photos</div>
+        <div id="stat-count" style="font-size:14px;font-weight:700;color:#0F172A;">—</div>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:#FFFBEB;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" fill="#F59E0B" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
       </div>
       <div>
-        <p class="text-xs text-gray-400 font-medium">Avg Rating</p>
-        <p id="stat-rating" class="text-sm font-bold text-gray-900">—</p>
+        <div style="font-size:11px;color:#94A3B8;font-weight:500;">Avg Rating</div>
+        <div id="stat-rating" style="font-size:14px;font-weight:700;color:#0F172A;">—</div>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:#F0FDF4;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><path d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
       </div>
       <div>
-        <p class="text-xs text-gray-400 font-medium">AI Tags Used</p>
-        <p id="stat-tags" class="text-sm font-bold text-gray-900">—</p>
+        <div style="font-size:11px;color:#94A3B8;font-weight:500;">AI Tags</div>
+        <div id="stat-tags" style="font-size:14px;font-weight:700;color:#0F172A;">—</div>
       </div>
     </div>
+
   </div>
 </div>
 
 <!-- ── Main layout ─────────────────────────────────────────────────────────── -->
-<div class="max-w-screen-2xl mx-auto px-5 py-6 flex flex-col lg:flex-row gap-6 items-start">
+<div style="max-width:1600px;margin:0 auto;padding:24px 20px;display:flex;gap:24px;align-items:flex-start;">
 
-  <!-- ── Upload panel ──────────────────────────────────────────────────────── -->
-  <div class="w-full lg:w-80 xl:w-96 flex-shrink-0 lg:sticky lg:top-[124px]">
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+  <!-- ── Upload sidebar ──────────────────────────────────────────────────────── -->
+  <div style="width:340px;flex-shrink:0;position:sticky;top:136px;">
 
-      <div class="px-6 pt-6 pb-4 border-b border-gray-100">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
-          </div>
-          <div>
-            <h2 class="font-bold text-gray-900 text-base">Upload Photo</h2>
-            <p class="text-xs text-gray-400">JPEG, PNG, WebP · max 10 MB</p>
-          </div>
+    <!-- Upload card -->
+    <div style="background:#fff;border-radius:20px;border:1px solid #E2E8F0;box-shadow:0 1px 3px rgba(0,0,0,0.06);overflow:hidden;">
+
+      <div style="padding:20px 24px 16px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;background:#2563EB;border-radius:12px;display:flex;align-items:center;justify-content:center;">
+          <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F172A;">Upload Photo</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:1px;">JPEG, PNG, WebP · max 10 MB</div>
         </div>
       </div>
 
-      <form id="upload-form" onsubmit="handleUpload(event)" class="px-6 py-5 space-y-4">
+      <form id="upload-form" onsubmit="handleUpload(event)" style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
 
         <!-- Drop zone -->
-        <div id="drop-zone"
-          class="relative border-2 border-dashed border-gray-200 rounded-xl overflow-hidden cursor-pointer transition-all"
-          ondragover="e=>e.preventDefault()" ondragenter="dzEnter()" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+        <div id="drop-zone" style="position:relative;border:2px dashed #CBD5E1;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,background 0.2s;"
+          ondragover="event.preventDefault()" ondragenter="dzEnter()" ondragleave="dzLeave()" ondrop="dzDrop(event)">
           <input type="file" id="photo-file" accept="image/jpeg,image/png,image/gif,image/webp"
             onchange="handleFile(event)"
-            class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-          <div id="dz-default" class="py-7 text-center">
-            <div class="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+            style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:5;" />
+          <div id="dz-default" style="padding:28px 16px;text-align:center;">
+            <div style="width:44px;height:44px;background:#F1F5F9;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">
+              <svg width="22" height="22" fill="none" stroke="#94A3B8" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
             </div>
-            <p class="text-sm font-semibold text-gray-600">Click or drop image here</p>
-            <p class="text-xs text-gray-400 mt-1">Supports JPEG, PNG, GIF, WebP</p>
+            <p style="font-size:13px;font-weight:600;color:#475569;">Click or drop image here</p>
+            <p style="font-size:11px;color:#94A3B8;margin-top:4px;">JPEG · PNG · GIF · WebP</p>
           </div>
           <img id="upload-preview" src="" alt="Preview"
-            class="hidden w-full object-cover" style="max-height:180px;" />
+            style="display:none;width:100%;max-height:180px;object-fit:cover;" />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">Title <span class="text-red-400">*</span></label>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">Title <span style="color:#EF4444;">*</span></label>
           <input type="text" id="photo-title" maxlength="100" required placeholder="Give your photo a title"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
+            style="width:100%;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:13px;color:#0F172A;transition:box-shadow 0.2s,border-color 0.2s;"
+            onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#E2E8F0'" />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-gray-600 mb-1.5">Caption</label>
+          <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">Caption</label>
           <textarea id="photo-caption" maxlength="500" rows="2" placeholder="Tell the story…"
-            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all"></textarea>
+            style="width:100%;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:13px;color:#0F172A;resize:none;transition:box-shadow 0.2s,border-color 0.2s;font-family:inherit;"
+            onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#E2E8F0'"></textarea>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Location</label>
+            <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">Location</label>
             <input type="text" id="photo-location" maxlength="100" placeholder="Belfast, UK"
-              class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
+              style="width:100%;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:13px;color:#0F172A;transition:box-shadow 0.2s,border-color 0.2s;"
+              onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#E2E8F0'" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">People</label>
+            <label style="display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;">People</label>
             <input type="text" id="photo-people" maxlength="200" placeholder="Alice, Bob"
-              class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all" />
+              style="width:100%;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;font-size:13px;color:#0F172A;transition:box-shadow 0.2s,border-color 0.2s;"
+              onfocus="this.style.borderColor='#2563EB'" onblur="this.style.borderColor='#E2E8F0'" />
           </div>
         </div>
 
         <button type="submit" id="upload-btn"
-          class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+          style="width:100%;background:#2563EB;color:#fff;font-weight:600;font-size:14px;padding:13px;border-radius:14px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background 0.15s,transform 0.1s;box-shadow:0 2px 8px rgba(37,99,235,0.25);"
+          onmouseover="this.style.background='#1D4ED8'" onmouseout="this.style.background='#2563EB'">
+          <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
           Upload Photo
         </button>
 
-        <!-- Status messages -->
-        <div id="upload-status" class="hidden rounded-xl px-4 py-3 text-sm font-medium text-center"></div>
+        <div id="upload-status" style="display:none;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:500;text-align:center;"></div>
       </form>
     </div>
 
     <!-- Tips card -->
-    <div class="mt-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
-      <p class="text-xs font-bold text-blue-700 mb-2">💡 Tips</p>
-      <ul class="text-xs text-blue-600 space-y-1.5 leading-relaxed">
-        <li>· Azure Computer Vision automatically generates AI tags</li>
-        <li>· Add a location so consumers can filter by place</li>
-        <li>· Tag people present for easy searching</li>
+    <div style="margin-top:16px;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border:1px solid #BFDBFE;border-radius:16px;padding:16px 18px;">
+      <p style="font-size:12px;font-weight:700;color:#1E40AF;margin:0 0 10px;">Tips for great uploads</p>
+      <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;">
+        <li style="font-size:12px;color:#2563EB;display:flex;gap:6px;align-items:flex-start;">
+          <span style="flex-shrink:0;margin-top:1px;">•</span>
+          <span>Azure Computer Vision auto-generates AI tags for your photo</span>
+        </li>
+        <li style="font-size:12px;color:#2563EB;display:flex;gap:6px;align-items:flex-start;">
+          <span style="flex-shrink:0;margin-top:1px;">•</span>
+          <span>Add a location so consumers can filter by place</span>
+        </li>
+        <li style="font-size:12px;color:#2563EB;display:flex;gap:6px;align-items:flex-start;">
+          <span style="flex-shrink:0;margin-top:1px;">•</span>
+          <span>Tag people present for easier discovery</span>
+        </li>
       </ul>
     </div>
+
   </div>
 
-  <!-- ── My Photos ───────────────────────────────────────────────────────────── -->
-  <div class="flex-1 min-w-0">
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="font-bold text-gray-900 text-lg">My Photos</h2>
-      <button onclick="refreshGrid()" class="text-xs font-semibold text-gray-500 hover:text-blue-600 bg-white border border-gray-200 hover:border-blue-300 px-3 py-1.5 rounded-xl transition-all shadow-sm">
+  <!-- ── My Photos grid ─────────────────────────────────────────────────────── -->
+  <div style="flex:1;min-width:0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <h2 style="font-size:20px;font-weight:800;color:#0F172A;margin:0;">My Photos</h2>
+      <button onclick="refreshGrid()"
+        style="font-size:12px;font-weight:600;color:#64748B;background:#fff;border:1px solid #E2E8F0;padding:8px 14px;border-radius:12px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.04);transition:color 0.15s,border-color 0.15s;"
+        onmouseover="this.style.color='#2563EB';this.style.borderColor='#93C5FD';"
+        onmouseout="this.style.color='#64748B';this.style.borderColor='#E2E8F0';">
         ↻ Refresh
       </button>
     </div>
 
-    <div id="my-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-      <div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-400">
-        <span class="spinner spinner-blue" style="width:24px;height:24px;"></span>
-        <p class="text-sm font-medium">Loading your photos…</p>
+    <div id="my-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5" style="gap:16px;">
+      <div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:80px 0;gap:12px;color:#94A3B8;">
+        <span class="spinner" style="width:24px;height:24px;border:2.5px solid #DBEAFE;border-top-color:#2563EB;"></span>
+        <p style="font-size:13px;font-weight:500;margin:0;">Loading your photos…</p>
       </div>
     </div>
   </div>
 </div>
 
 <!-- ── Delete confirm modal ─────────────────────────────────────────────────── -->
-<div id="delete-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
-  style="background:rgba(0,0,0,.5);backdrop-filter:blur(6px);">
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 ring-1 ring-black/5">
-    <div class="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-      <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+<div id="delete-modal" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:24px;box-shadow:0 25px 60px rgba(0,0,0,0.25);width:100%;max-width:360px;padding:28px;text-align:center;">
+    <div style="width:52px;height:52px;background:#FEF2F2;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <svg width="24" height="24" fill="none" stroke="#EF4444" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
     </div>
-    <h3 class="text-base font-bold text-gray-900 text-center mb-1">Delete photo?</h3>
-    <p class="text-sm text-gray-500 text-center mb-5">This will permanently remove the photo and all its ratings and comments.</p>
-    <div class="flex gap-3">
-      <button onclick="cancelDelete()" class="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">Cancel</button>
-      <button id="confirm-delete-btn" onclick="confirmDelete()" class="flex-1 py-2.5 bg-red-500 hover:bg-red-600 rounded-xl text-sm font-semibold text-white transition">Delete</button>
+    <h3 style="font-size:16px;font-weight:700;color:#0F172A;margin:0 0 6px;">Delete photo?</h3>
+    <p style="font-size:13px;color:#64748B;margin:0 0 22px;line-height:1.5;">This will permanently remove the photo along with all its ratings and comments.</p>
+    <div style="display:flex;gap:10px;">
+      <button onclick="cancelDelete()"
+        style="flex:1;padding:12px;border:1.5px solid #E2E8F0;border-radius:14px;font-size:14px;font-weight:600;color:#475569;background:#fff;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='#fff'">
+        Cancel
+      </button>
+      <button id="confirm-delete-btn" onclick="confirmDelete()"
+        style="flex:1;padding:12px;border:none;border-radius:14px;font-size:14px;font-weight:600;color:#fff;background:#EF4444;cursor:pointer;transition:background 0.15s;"
+        onmouseover="this.style.background='#DC2626'" onmouseout="this.style.background='#EF4444'">
+        Delete
+      </button>
     </div>
   </div>
 </div>
@@ -215,9 +255,8 @@
     await refreshGrid();
   })();
 
-  // Drag-and-drop handlers
-  function dzEnter() { document.getElementById("drop-zone").classList.add("drop-active"); }
-  function dzLeave() { document.getElementById("drop-zone").classList.remove("drop-active"); }
+  function dzEnter() { document.getElementById("drop-zone").classList.add("dz-hover"); }
+  function dzLeave() { document.getElementById("drop-zone").classList.remove("dz-hover"); }
   function dzDrop(e) {
     e.preventDefault();
     dzLeave();
@@ -233,20 +272,18 @@
   function showPreview(file) {
     const preview = document.getElementById("upload-preview");
     preview.src = URL.createObjectURL(file);
-    preview.classList.remove("hidden");
-    document.getElementById("dz-default").classList.add("hidden");
-    document.getElementById("drop-zone").classList.add("drop-active");
+    preview.style.display = "block";
+    document.getElementById("dz-default").style.display = "none";
+    document.getElementById("drop-zone").classList.add("dz-hover");
   }
 
   async function handleUpload(e) {
     e.preventDefault();
-    const statusEl = document.getElementById("upload-status");
     const btn = document.getElementById("upload-btn");
-    statusEl.classList.add("hidden");
 
     const file = document.getElementById("photo-file").files[0];
     if (!file) { showStatus("error", "Please select a photo first."); return; }
-    if (file.size > 10*1024*1024) { showStatus("error", "File must be under 10 MB."); return; }
+    if (file.size > 10 * 1024 * 1024) { showStatus("error", "File must be under 10 MB."); return; }
 
     const title = document.getElementById("photo-title").value.trim();
     if (!title) { showStatus("error", "A title is required."); return; }
@@ -259,125 +296,144 @@
     formData.append("people",   document.getElementById("photo-people").value.trim());
 
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner spinner-white" style="width:16px;height:16px;margin-right:6px;"></span> Uploading…';
+    btn.innerHTML = '<span class="spinner" style="width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;margin-right:6px;"></span> Uploading…';
 
     try {
       const result = await uploadPhoto(formData);
       if (!result) { showStatus("error", "No response from server."); return; }
-      let msg = `"${result.title}" uploaded successfully!`;
-      if (result.aiTags?.length) msg += ` AI tagged: ${result.aiTags.slice(0,4).join(", ")}.`;
+      let msg = `"${result.title}" uploaded!`;
+      if (result.aiTags?.length) msg += ` AI tags: ${result.aiTags.slice(0, 4).join(", ")}.`;
       showStatus("success", msg);
       document.getElementById("upload-form").reset();
-      document.getElementById("upload-preview").classList.add("hidden");
-      document.getElementById("dz-default").classList.remove("hidden");
-      document.getElementById("drop-zone").classList.remove("drop-active");
+      document.getElementById("upload-preview").style.display = "none";
+      document.getElementById("dz-default").style.display = "";
+      document.getElementById("drop-zone").classList.remove("dz-hover");
       await refreshGrid();
     } catch (err) {
       showStatus("error", err.message);
     } finally {
       btn.disabled = false;
-      btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg> Upload Photo`;
+      btn.innerHTML = '<svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg> Upload Photo';
     }
   }
 
   function showStatus(type, msg) {
     const el = document.getElementById("upload-status");
-    el.className = type === "success"
-      ? "rounded-xl px-4 py-3 text-sm font-medium text-center bg-green-50 text-green-700 border border-green-200"
-      : "rounded-xl px-4 py-3 text-sm font-medium text-center bg-red-50 text-red-600 border border-red-200";
+    if (type === "success") {
+      el.style.background = "#F0FDF4";
+      el.style.color = "#16A34A";
+      el.style.border = "1px solid #BBF7D0";
+    } else {
+      el.style.background = "#FEF2F2";
+      el.style.color = "#DC2626";
+      el.style.border = "1px solid #FECACA";
+    }
     el.textContent = msg;
-    el.classList.remove("hidden");
+    el.style.display = "block";
   }
 
   async function refreshGrid() {
     const grid = document.getElementById("my-grid");
-    grid.innerHTML = `<div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-400">
-      <span class="spinner spinner-blue" style="width:24px;height:24px;"></span>
-      <p class="text-sm font-medium">Loading…</p></div>`;
+    grid.innerHTML = `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:80px 0;gap:12px;color:#94A3B8;">
+      <span class="spinner" style="width:24px;height:24px;border:2.5px solid #DBEAFE;border-top-color:#2563EB;"></span>
+      <p style="font-size:13px;font-weight:500;margin:0;">Loading…</p></div>`;
     try {
       const data = await getMyPhotos();
-      if (!data?.photos) { grid.innerHTML = empty("Could not load photos."); return; }
+      if (!data?.photos) { grid.innerHTML = errState("Could not load photos."); return; }
       const photos = data.photos;
-      const count = photos.length;
-      document.getElementById("stat-count").textContent = count || "0";
+      document.getElementById("stat-count").textContent = photos.length || "0";
 
-      if (!count) { grid.innerHTML = emptyState(); return; }
+      if (!photos.length) { grid.innerHTML = emptyState(); return; }
 
-      const avgRating = photos.reduce((s,p)=>s+(p.avgRating||0),0) / count;
-      const totalTags = photos.reduce((s,p)=>s+(p.aiTags?.length||0),0);
+      const avgRating = photos.reduce((s, p) => s + (p.avgRating || 0), 0) / photos.length;
+      const totalTags = photos.reduce((s, p) => s + (p.aiTags?.length || 0), 0);
       document.getElementById("stat-rating").textContent = avgRating ? avgRating.toFixed(1) + " ★" : "—";
       document.getElementById("stat-tags").textContent = totalTags || "0";
 
       grid.innerHTML = "";
       photos.forEach(p => grid.appendChild(makeCard(p)));
     } catch (err) {
-      grid.innerHTML = `<div class="col-span-full text-center py-20 text-red-400 text-sm">Error: ${esc(err.message)}</div>`;
+      grid.innerHTML = errState(err.message);
     }
   }
 
   function makeCard(p) {
     const div = document.createElement("div");
-    div.className = "photo-card group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1";
+    div.className = "photo-card card-enter";
     div.dataset.id = p.id;
-    const tag = (p.aiTags||[])[0];
+    div.style.cssText = "position:relative;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:transform 0.25s,box-shadow 0.25s;cursor:pointer;background:#E2E8F0;";
+    div.onmouseover = () => { div.style.transform = "translateY(-4px)"; div.style.boxShadow = "0 12px 32px rgba(0,0,0,0.16)"; };
+    div.onmouseout  = () => { div.style.transform = ""; div.style.boxShadow = "0 2px 8px rgba(0,0,0,0.08)"; };
+
+    const tag = (p.aiTags || [])[0];
     div.innerHTML = `
-      <div class="aspect-[4/5] bg-gray-200 overflow-hidden">
-        <img src="${p.imageUrl}" alt="${esc(p.title)}" loading="lazy" class="card-img w-full h-full object-cover" />
+      <div style="aspect-ratio:4/5;overflow:hidden;">
+        <img src="${p.imageUrl}" alt="${esc(p.title)}" loading="lazy" class="card-img" style="width:100%;height:100%;object-fit:cover;" />
       </div>
-      <div class="card-overlay absolute inset-0 flex flex-col justify-end p-3 pointer-events-none">
-        <p class="text-white font-semibold text-sm leading-tight drop-shadow line-clamp-2">${esc(p.title)}</p>
-        <div class="flex items-center justify-between mt-1.5">
-          ${p.location ? `<span class="text-white/70 text-xs truncate max-w-[70%]">📍 ${esc(p.location)}</span>` : '<span></span>'}
-          ${p.avgRating ? `<span class="text-xs font-semibold text-white/90">★ ${p.avgRating.toFixed(1)}</span>` : ""}
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 50%);pointer-events:none;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;">
+        <p style="color:#fff;font-weight:600;font-size:13px;line-height:1.3;margin:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${esc(p.title)}</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+          ${p.location ? `<span style="color:rgba(255,255,255,0.75);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%;">📍 ${esc(p.location)}</span>` : "<span></span>"}
+          ${p.avgRating ? `<span style="color:rgba(255,255,255,0.9);font-size:12px;font-weight:600;">★ ${p.avgRating.toFixed(1)}</span>` : ""}
         </div>
-        ${tag ? `<div class="mt-1"><span class="text-xs font-semibold bg-white/20 text-white px-2 py-0.5 rounded-full">${esc(tag)}</span></div>` : ""}
+        ${tag ? `<div style="margin-top:6px;"><span style="font-size:11px;font-weight:600;background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:20px;">${esc(tag)}</span></div>` : ""}
       </div>
-      <button onclick="startDelete(event,'${p.id}')"
-        class="pointer-events-auto absolute top-2.5 right-2.5 bg-red-500 hover:bg-red-600 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg flex items-center gap-1">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      <button class="del-btn" onclick="startDelete(event,'${p.id}')"
+        style="position:absolute;top:10px;right:10px;background:#EF4444;color:#fff;border:none;border-radius:10px;padding:6px 10px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;box-shadow:0 2px 8px rgba(239,68,68,0.4);">
+        <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
         Delete
       </button>`;
     return div;
   }
 
   function emptyState() {
-    return `<div class="col-span-full flex flex-col items-center py-20 gap-4 text-gray-300">
-      <svg class="w-16 h-16" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-      <div class="text-center">
-        <p class="font-semibold text-gray-400 text-base">No photos yet</p>
-        <p class="text-sm text-gray-400 mt-1">Upload your first photo using the form on the left.</p>
+    return `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:80px 0;gap:12px;color:#CBD5E1;">
+      <svg width="56" height="56" fill="none" stroke="#CBD5E1" stroke-width="1.2" viewBox="0 0 24 24"><path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+      <div style="text-align:center;">
+        <p style="font-size:15px;font-weight:600;color:#94A3B8;margin:0 0 4px;">No photos yet</p>
+        <p style="font-size:13px;color:#CBD5E1;margin:0;">Upload your first photo using the panel on the left.</p>
       </div>
     </div>`;
+  }
+
+  function errState(msg) {
+    return `<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:#EF4444;font-size:13px;">Error: ${esc(msg)}</div>`;
   }
 
   function startDelete(e, id) {
     e.stopPropagation();
     pendingDeleteId = id;
-    document.getElementById("delete-modal").classList.remove("hidden");
+    const modal = document.getElementById("delete-modal");
+    modal.style.display = "flex";
   }
+
   function cancelDelete() {
     pendingDeleteId = null;
-    document.getElementById("delete-modal").classList.add("hidden");
+    document.getElementById("delete-modal").style.display = "none";
   }
+
   async function confirmDelete() {
     if (!pendingDeleteId) return;
     const btn = document.getElementById("confirm-delete-btn");
-    btn.textContent = "Deleting…"; btn.disabled = true;
+    btn.textContent = "Deleting…";
+    btn.disabled = true;
     try {
       await deletePhoto(pendingDeleteId);
       document.querySelector(`[data-id="${pendingDeleteId}"]`)?.remove();
       const remaining = document.querySelectorAll("#my-grid .photo-card").length;
       document.getElementById("stat-count").textContent = remaining || "0";
       if (!remaining) document.getElementById("my-grid").innerHTML = emptyState();
-    } catch (err) { alert(`Delete failed: ${err.message}`); }
-    finally {
-      btn.textContent = "Delete"; btn.disabled = false;
+    } catch (err) {
+      alert(`Delete failed: ${err.message}`);
+    } finally {
+      btn.textContent = "Delete";
+      btn.disabled = false;
       cancelDelete();
     }
   }
 
   function esc(s) {
-    return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 </script>
 </body>
