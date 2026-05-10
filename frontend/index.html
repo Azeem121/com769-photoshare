@@ -9,18 +9,53 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .spinner { display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px; }
+    .spinner { display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px; }
     @keyframes spin { to { transform:rotate(360deg) } }
-    .dot-grid { background-image:radial-gradient(rgba(255,255,255,0.12) 1px,transparent 1px);background-size:22px 22px; }
+
+    /* Hero */
+    .hero-bg { background: linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 45%,#0ea5e9 100%); }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);
+      background-size:40px 40px;
+    }
+
+    /* Tab */
+    .tab-active   { background:#2563EB;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4); }
+    .tab-inactive { color:#6B7280; }
+    .tab-inactive:hover { background:#F3F4F6;color:#111827; }
+
+    /* Role card */
+    .role-card { border:2px solid #E5E7EB;border-radius:14px;padding:14px 12px;cursor:pointer;transition:all .15s;background:#fff; }
+    .role-card:hover  { border-color:#93C5FD;background:#EFF6FF; }
+    .role-card.active { border-color:#2563EB;background:#EFF6FF; }
+    .role-icon { width:34px;height:34px;border-radius:9px;background:#E5E7EB;display:flex;align-items:center;justify-content:center;transition:background .15s;margin-bottom:10px; }
+    .role-card.active .role-icon { background:#2563EB; }
+
+    /* Input */
+    .field { width:100%;padding:11px 14px;background:#F9FAFB;border:1.5px solid #E5E7EB;border-radius:12px;font-size:14px;color:#111827;outline:none;transition:all .15s;font-family:inherit; }
+    .field:focus { background:#fff;border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .field::placeholder { color:#9CA3AF; }
+
+    /* Submit */
+    .submit-btn { width:100%;background:#2563EB;color:#fff;font-weight:700;font-size:14px;padding:13px;border-radius:12px;border:none;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-family:inherit; }
+    .submit-btn:hover:not(:disabled) { background:#1D4ED8;transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.3); }
+    .submit-btn:active:not(:disabled) { transform:none;box-shadow:none; }
+    .submit-btn:disabled { opacity:.7;cursor:not-allowed; }
   </style>
 </head>
-<body class="bg-white">
+<body>
 <div class="min-h-screen flex">
 
-  <!-- ── Brand panel (desktop left) ──────────────────────────────────── -->
-  <div class="hidden lg:flex flex-col justify-between bg-blue-600 w-5/12 p-14 relative overflow-hidden dot-grid">
+  <!-- ══ LEFT — Hero ══════════════════════════════════════════════════════ -->
+  <div class="hidden lg:flex flex-col justify-between hero-bg hero-grid w-[46%] xl:w-5/12 p-14 relative overflow-hidden flex-shrink-0">
+    <div class="absolute -top-24 -right-24 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 -left-20 w-72 h-72 bg-sky-400/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Brand -->
     <div class="relative z-10 flex items-center gap-3">
-      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+      <div class="w-11 h-11 bg-white/15 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center">
         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
           <circle cx="12" cy="13" r="3"/>
@@ -29,44 +64,59 @@
       <span class="text-white font-black text-2xl tracking-tight">PhotoShare</span>
     </div>
 
-    <div class="relative z-10 space-y-8">
+    <!-- Copy -->
+    <div class="relative z-10 space-y-9">
       <div>
-        <h2 class="text-4xl font-black text-white leading-snug">Share the moments<br/>that matter.</h2>
-        <p class="mt-3 text-blue-100 leading-relaxed max-w-xs">A cloud-native photo-sharing platform built on Microsoft Azure.</p>
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 mb-6">
+          <span class="w-2 h-2 rounded-full bg-green-400" style="animation:spin 2s linear infinite;box-shadow:0 0 0 3px rgba(74,222,128,.3)"></span>
+          <span class="text-white/80 text-xs font-semibold tracking-wide">Live on Azure · COM769</span>
+        </div>
+        <h1 class="text-[2.8rem] font-black text-white leading-[1.1] tracking-tight">
+          Share the<br/>moments<br/>that matter.
+        </h1>
+        <p class="mt-4 text-blue-100/75 text-[15px] leading-relaxed max-w-xs">
+          A cloud-native photo platform — upload, discover and discuss stunning photography, powered by Azure AI.
+        </p>
       </div>
-      <div class="space-y-3.5">
-        <div class="flex items-center gap-3 text-sm text-blue-100">
-          <div class="w-5 h-5 rounded-full bg-white/20 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-          </div>AI-powered tags via Azure Computer Vision
+
+      <div class="space-y-3">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="text-sm text-blue-100/90">AI-powered tags via Azure Computer Vision</span>
         </div>
-        <div class="flex items-center gap-3 text-sm text-blue-100">
-          <div class="w-5 h-5 rounded-full bg-white/20 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-          </div>Search, filter and sort by tag or rating
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="text-sm text-blue-100/90">Search and filter by tag, location or rating</span>
         </div>
-        <div class="flex items-center gap-3 text-sm text-blue-100">
-          <div class="w-5 h-5 rounded-full bg-white/20 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-          </div>Star ratings and real-time comments
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="text-sm text-blue-100/90">Star ratings, comments and creator uploads</span>
         </div>
-        <div class="flex items-center gap-3 text-sm text-blue-100">
-          <div class="w-5 h-5 rounded-full bg-white/20 flex-shrink-0 flex items-center justify-center">
-            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-          </div>Role-based access: Creators &amp; Consumers
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="text-sm text-blue-100/90">Traffic Manager, CI/CD &amp; HTTP caching</span>
         </div>
       </div>
     </div>
-    <p class="relative z-10 text-blue-300 text-xs">COM769 · Cloud Application Development · Ulster University</p>
+
+    <p class="relative z-10 text-blue-300/50 text-xs">MSc Computer Science · Scalable Advanced Software Solutions</p>
   </div>
 
-  <!-- ── Form panel ──────────────────────────────────────────────────── -->
-  <div class="flex flex-1 flex-col justify-center px-8 sm:px-12 lg:px-16 bg-white">
-    <div class="w-full max-w-sm mx-auto">
+  <!-- ══ RIGHT — Form ═════════════════════════════════════════════════════ -->
+  <div class="flex flex-1 items-center justify-center bg-[#F0F4FF] p-6 sm:p-10">
+    <div class="w-full max-w-[390px]">
 
       <!-- Mobile logo -->
-      <div class="flex items-center gap-2 mb-8 lg:hidden">
-        <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center">
+      <div class="flex items-center gap-2.5 mb-7 lg:hidden">
+        <div class="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
           <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
             <circle cx="12" cy="13" r="3"/>
@@ -75,81 +125,114 @@
         <span class="font-black text-xl text-gray-900 tracking-tight">PhotoShare</span>
       </div>
 
-      <!-- Sign In / Register toggle -->
-      <div class="flex rounded-xl border border-gray-200 bg-gray-50 p-1 mb-6 gap-1">
-        <button type="button" id="tab-signin"    onclick="setMode('signin')"
-          class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-gray-900 shadow-sm border border-gray-200">
-          Sign In
-        </button>
-        <button type="button" id="tab-register" onclick="setMode('register')"
-          class="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700">
-          Create Account
-        </button>
-      </div>
+      <!-- Card -->
+      <div class="bg-white rounded-3xl overflow-hidden" style="box-shadow:0 20px 60px -10px rgba(0,0,0,.14);">
 
-      <!-- Heading -->
-      <div class="mb-5">
-        <h1 id="form-heading" class="text-2xl font-bold text-gray-900 tracking-tight">Welcome back</h1>
-        <p  id="form-sub"     class="mt-1 text-sm text-gray-500">Sign in with your username and password.</p>
-      </div>
-
-      <!-- Role selector — shown on BOTH modes so creator can also sign in properly -->
-      <div class="mb-5">
-        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">I am a…</p>
-        <div class="flex rounded-xl border border-gray-200 bg-gray-50 p-1 gap-1">
-          <button type="button" id="role-consumer" onclick="setRole('consumer')"
-            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all bg-blue-600 text-white shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            Consumer
-          </button>
-          <button type="button" id="role-creator" onclick="setRole('creator')"
-            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-800 hover:bg-white">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/>
-            </svg>
-            Creator
-          </button>
-        </div>
-        <p id="role-hint" class="text-xs text-gray-400 text-center mt-2">Browse, rate and comment on photos.</p>
-      </div>
-
-      <!-- Form -->
-      <form id="auth-form" onsubmit="handleSubmit(event)" class="space-y-4">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Username</label>
-          <input type="text" id="username" autocomplete="username" required
-            placeholder="Enter your username"
-            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition" />
-        </div>
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
-          <input type="password" id="password" autocomplete="current-password" required
-            placeholder="Minimum 4 characters"
-            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition" />
+        <!-- Tabs -->
+        <div class="p-2 m-4 mb-0 bg-gray-100 rounded-2xl flex gap-1.5">
+          <button id="tab-signin" onclick="setMode('signin')"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all tab-active">Sign In</button>
+          <button id="tab-register" onclick="setMode('register')"
+            class="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all tab-inactive">Create Account</button>
         </div>
 
-        <button type="submit" id="submit-btn"
-          class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center">
-          Sign In
-        </button>
-        <p id="auth-error" class="text-red-500 text-xs font-medium text-center min-h-4"></p>
-      </form>
+        <div class="px-6 pt-5 pb-6">
 
-      <p id="switch-hint" class="mt-5 text-xs text-gray-400 text-center">
-        No account?
-        <button onclick="setMode('register')" class="text-blue-600 font-semibold hover:underline">Create one here</button>
-      </p>
+          <!-- Heading -->
+          <div class="mb-5">
+            <h2 id="form-heading" class="text-xl font-black text-gray-900 tracking-tight">Welcome back</h2>
+            <p  id="form-sub"     class="text-sm text-gray-500 mt-1">Enter your credentials to continue.</p>
+          </div>
 
-      <div class="mt-6 pt-5 border-t border-gray-100">
-        <p class="text-xs text-gray-400 text-center leading-relaxed">
-          <strong class="text-gray-500">Test accounts:</strong><br/>
-          Consumer: <code class="bg-gray-100 px-1 rounded text-gray-600">alice</code> / <code class="bg-gray-100 px-1 rounded text-gray-600">pass1234</code><br/>
-          Creator: <code class="bg-gray-100 px-1 rounded text-gray-600">sarah</code> / <code class="bg-gray-100 px-1 rounded text-gray-600">pass1234</code> (select Creator above)
-        </p>
+          <!-- Role selector — ONLY shown on register -->
+          <div id="role-section" class="hidden mb-5">
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Account type</p>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div id="role-consumer" class="role-card active" onclick="setRole('consumer')">
+                <div class="role-icon">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800">Consumer</p>
+                <p class="text-[11px] text-gray-400 mt-0.5 leading-snug">Browse, rate &amp; comment</p>
+              </div>
+              <div id="role-creator" class="role-card" onclick="setRole('creator')">
+                <div class="role-icon">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-bold text-gray-800">Creator</p>
+                <p class="text-[11px] text-gray-400 mt-0.5 leading-snug">Upload &amp; manage photos</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fields -->
+          <form id="auth-form" onsubmit="handleSubmit(event)" class="space-y-3.5">
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Username</label>
+              <input type="text" id="username" autocomplete="username" required
+                placeholder="Enter your username" class="field" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 uppercase tracking-wide mb-1.5">Password</label>
+              <div class="relative">
+                <input type="password" id="password" autocomplete="current-password" required
+                  placeholder="Minimum 4 characters" class="field pr-10" />
+                <button type="button" onclick="togglePw()" tabindex="-1"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <p id="auth-error" class="text-red-500 text-xs font-semibold text-center hidden"></p>
+
+            <button type="submit" id="submit-btn" class="submit-btn !mt-5">Sign In</button>
+          </form>
+
+          <!-- Switch hint -->
+          <p id="switch-hint" class="mt-4 text-xs text-gray-400 text-center">
+            No account? <button onclick="setMode('register')" class="text-blue-600 font-bold hover:underline">Create one here</button>
+          </p>
+
+          <!-- Quick-fill demo accounts -->
+          <div class="border-t border-gray-100 mt-5 pt-4">
+            <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-center mb-3">Quick demo login</p>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="fillDemo('alice','pass1234')"
+                class="flex flex-col items-start bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-xl px-3 py-2.5 transition-all text-left">
+                <div class="flex items-center gap-1.5 mb-0.5">
+                  <div class="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <svg class="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                  </div>
+                  <span class="text-xs font-bold text-gray-700">alice</span>
+                </div>
+                <span class="text-[11px] text-blue-600 font-semibold">Consumer</span>
+              </button>
+              <button onclick="fillDemo('sarah@creator','pass1234')"
+                class="flex flex-col items-start bg-gray-50 hover:bg-amber-50 border border-gray-200 hover:border-amber-200 rounded-xl px-3 py-2.5 transition-all text-left">
+                <div class="flex items-center gap-1.5 mb-0.5">
+                  <div class="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                    <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                  </div>
+                  <span class="text-xs font-bold text-gray-700">sarah</span>
+                </div>
+                <span class="text-[11px] text-amber-600 font-semibold">Creator</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
 
+      <p class="text-center text-[11px] text-gray-400 mt-5">Ulster University · MSc Computer Science · Azure Cloud</p>
     </div>
   </div>
 </div>
@@ -162,66 +245,83 @@
   let mode = "signin";
   let role = "consumer";
 
-  const ACTIVE_TAB   = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all bg-white text-gray-900 shadow-sm border border-gray-200";
-  const INACTIVE_TAB = "flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-700";
-  const ACTIVE_ROLE  = "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all bg-blue-600 text-white shadow-sm";
-  const INACTIVE_ROLE= "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all text-gray-500 hover:text-gray-800 hover:bg-white";
-
   function setMode(m) {
     mode = m;
     const isReg = m === "register";
-    document.getElementById("tab-signin").className    = isReg ? INACTIVE_TAB : ACTIVE_TAB;
-    document.getElementById("tab-register").className  = isReg ? ACTIVE_TAB   : INACTIVE_TAB;
+    document.getElementById("tab-signin").className   = "flex-1 py-2.5 rounded-xl text-sm font-bold transition-all " + (isReg ? "tab-inactive" : "tab-active");
+    document.getElementById("tab-register").className = "flex-1 py-2.5 rounded-xl text-sm font-bold transition-all " + (isReg ? "tab-active" : "tab-inactive");
     document.getElementById("form-heading").textContent = isReg ? "Create account" : "Welcome back";
-    document.getElementById("form-sub").textContent     = isReg ? "Pick a username and password to get started." : "Sign in with your username and password.";
-    document.getElementById("submit-btn").textContent   = isReg ? "Create Account" : "Sign In";
-    document.getElementById("switch-hint").innerHTML    = isReg
-      ? 'Already have an account? <button onclick="setMode(\'signin\')" class="text-blue-600 font-semibold hover:underline">Sign in here</button>'
-      : 'No account? <button onclick="setMode(\'register\')" class="text-blue-600 font-semibold hover:underline">Create one here</button>';
-    document.getElementById("auth-error").textContent = "";
+    document.getElementById("form-sub").textContent     = isReg ? "Choose your account type to get started." : "Enter your credentials to continue.";
+    document.getElementById("role-section").classList.toggle("hidden", !isReg);
+    document.getElementById("submit-btn").textContent = isReg ? "Create Account" : "Sign In";
+    document.getElementById("switch-hint").innerHTML  = isReg
+      ? 'Already have an account? <button onclick="setMode(\'signin\')" class="text-blue-600 font-bold hover:underline">Sign in here</button>'
+      : 'No account? <button onclick="setMode(\'register\')" class="text-blue-600 font-bold hover:underline">Create one here</button>';
+    document.getElementById("auth-error").classList.add("hidden");
   }
 
   function setRole(r) {
     role = r;
-    document.getElementById("role-consumer").className = r === "consumer" ? ACTIVE_ROLE : INACTIVE_ROLE;
-    document.getElementById("role-creator").className  = r === "creator"  ? ACTIVE_ROLE : INACTIVE_ROLE;
-    document.getElementById("role-hint").textContent   = r === "creator"
-      ? "Upload and manage your own photos."
-      : "Browse, rate and comment on photos.";
+    document.getElementById("role-consumer").className = "role-card" + (r === "consumer" ? " active" : "");
+    document.getElementById("role-creator").className  = "role-card" + (r === "creator"  ? " active" : "");
+    document.getElementById("role-consumer").querySelector(".role-icon").style.background = r === "consumer" ? "#2563EB" : "";
+    document.getElementById("role-creator").querySelector(".role-icon").style.background  = r === "creator"  ? "#2563EB" : "";
+  }
+  // init consumer icon colour
+  document.getElementById("role-consumer").querySelector(".role-icon").style.background = "#2563EB";
+
+  function togglePw() {
+    const f = document.getElementById("password");
+    f.type = f.type === "password" ? "text" : "password";
   }
 
-  // Restore inner SVGs after className overwrite
-  document.getElementById("role-consumer").innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg> Consumer`;
-  document.getElementById("role-creator").innerHTML  = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3"/></svg> Creator`;
+  function fillDemo(username, password) {
+    setMode("signin");
+    document.getElementById("username").value = username;
+    document.getElementById("password").value = password;
+    document.getElementById("auth-error").classList.add("hidden");
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     const errEl = document.getElementById("auth-error");
     const btn   = document.getElementById("submit-btn");
-    errEl.textContent = "";
+    errEl.classList.add("hidden");
 
-    let username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value;
+    const usernameRaw = document.getElementById("username").value.trim();
+    const password    = document.getElementById("password").value;
 
-    if (!username || !password) { errEl.textContent = "Please fill in all fields."; return; }
-    if (password.length < 4)    { errEl.textContent = "Password must be at least 4 characters."; return; }
+    if (!usernameRaw || !password) { showErr("Please fill in all fields."); return; }
+    if (password.length < 4)      { showErr("Password must be at least 4 characters."); return; }
 
-    // Always apply role suffix based on selection
-    username = username.replace(/@creator$/, ""); // strip existing suffix first
-    if (role === "creator") username += "@creator";
+    // Build username:
+    //   Sign-in  → use exactly what the user typed (backend returns their stored role)
+    //   Register → strip any suffix then apply role-based suffix
+    let username = usernameRaw;
+    if (mode === "register") {
+      username = username.replace(/@creator$/, "");
+      if (role === "creator") username += "@creator";
+    }
 
     btn.disabled = true;
     btn.innerHTML = `<span class="spinner"></span>${mode === "register" ? "Creating account…" : "Signing in…"}`;
 
     try {
       const result = await login(username, password);
+      // Route is determined by the role the backend returns — not any UI selector
       saveSession(result.token, { userId: result.userId, username: result.username, role: result.role });
       window.location.href = result.role === "creator" ? "/creator.html" : "/consumer.html";
     } catch (err) {
-      errEl.textContent = err.message || "Something went wrong. Please try again.";
+      showErr(err.message || "Something went wrong. Please try again.");
       btn.disabled = false;
       btn.textContent = mode === "register" ? "Create Account" : "Sign In";
     }
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById("auth-error");
+    el.textContent = msg;
+    el.classList.remove("hidden");
   }
 </script>
 </body>
